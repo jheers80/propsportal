@@ -33,7 +33,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     handleClose();
-    router.push('/login');
+    router.replace('/');
   };
 
   const handleProfile = () => {
@@ -54,7 +54,7 @@ export default function Navbar() {
             Pizza Ranch Operations Portal
           </Typography>
         </Link>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto' }}>
           {profile && (
             <Typography variant="h6" component="div" sx={{ mr: 2 }}>
               {profile.full_name}

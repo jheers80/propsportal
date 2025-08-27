@@ -11,6 +11,12 @@ export async function middleware(request: NextRequest) {
   const quickAccessCookie = request.cookies.get('quick-access-session');
 
   const isAuthRoute = request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/quick-login';
+  const isPublicRoot = request.nextUrl.pathname === '/';
+
+  // Allow root page without auth
+  if (isPublicRoot) {
+    return response;
+  }
 
   if (!session && !quickAccessCookie && !isAuthRoute) {
     return NextResponse.redirect(new URL('/login', request.url));

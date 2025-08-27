@@ -37,7 +37,10 @@ export default function LocationsPage() {
     <div>
       <h1>Manage Locations</h1>
       <AddLocationForm onLocationAdded={handleLocationAdded} />
-      <LocationsTable locations={locations} />
+      <LocationsTable locations={locations} 
+        selectedLocation={null} 
+        onSelectLocation={( location: Location) => {console.log("[Location Table]: Clicked: "+ location.id)}} 
+      />
     </div>
   );
 }

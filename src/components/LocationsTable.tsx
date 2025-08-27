@@ -1,5 +1,9 @@
 'use client';
 
+import { formGroupClasses } from "@mui/material";
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import {
+  Box, Typography, List, ListItem, ListItemButton, ListItemIcon, ListItemText,} from '@mui/material';
 type Location = {
   id: number;
   store_id: string;
@@ -11,34 +15,29 @@ type Location = {
 
 interface LocationsTableProps {
     locations: Location[];
+    selectedLocation: Location | null;
+    onSelectLocation: (location: Location) => void;
 }
 
-export default function LocationsTable({ locations }: LocationsTableProps) {
+export default function LocationsTable({ locations, selectedLocation, onSelectLocation }: LocationsTableProps) {
   return (
-    <div>
-      <h2>Existing Locations</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Store ID</th>
-            <th>Store Name</th>
-            <th>City</th>
-            <th>State</th>
-            <th>Zip</th>
-          </tr>
-        </thead>
-        <tbody>
-          {locations.map((location) => (
-            <tr key={location.id}>
-              <td>{location.store_id}</td>
-              <td>{location.store_name}</td>
-              <td>{location.city}</td>
-              <td>{location.state}</td>
-              <td>{location.zip}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+      <Box sx={{ flex: 1 }}>
+        <Typography component="h1" variant="h5">
+          Manage Locations
+          </Typography>
+          <List>
+            {locations.map((location) => (
+              <ListItem key={location.id} divider>
+                <ListItemButton 
+                selected={selectedLocation?.id === location.id}
+                onClick={() => onSelectLocation(location)}
+                >
+                  <ListItemIcon><StorefrontIcon /></ListItemIcon>
+                  <ListItemText primary={location.store_id + ' - ' + location.store_name} secondary={`${location.city}, ${location.state} ${location.zip}`} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </Box>
   );
 }
