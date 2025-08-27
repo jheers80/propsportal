@@ -43,13 +43,13 @@ export default function Navbar() {
 
   const handleAdmin = () => {
     handleClose();
-    router.push('/admin/users');
+    router.push('/admin/');
   };
 
   return (
     <AppBar position="static">
       <Toolbar>
-        <Link href="/admin/users" style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/portal" style={{ textDecoration: 'none', color: 'inherit' }}>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, cursor: 'pointer' }}>
             Pizza Ranch Operations Portal
           </Typography>

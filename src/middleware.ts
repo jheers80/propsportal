@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if ((session || quickAccessCookie) && isAuthRoute) {
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL('/portal', request.url));
   }
 
   // Placeholder for quick access session validation and timeout logic
