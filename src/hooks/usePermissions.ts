@@ -20,7 +20,7 @@ export function usePermissions() {
           console.error('Error fetching permissions:', error);
           setPermissions([]);
         } else {
-          setPermissions(data.map((p: any) => p.permissions.name));
+          setPermissions(data.map((p: { permissions: { name: string }[] }) => p.permissions.map(x => x.name)).flat());
         }
         setLoading(false);
       };

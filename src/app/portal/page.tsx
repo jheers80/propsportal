@@ -43,7 +43,7 @@ export default function PortalPage() {
 
           <Grid container spacing={3}>
             {features.map((f) => (
-              <Grid key={f.title} item xs={12} sm={6} md={4}>
+              <Grid key={f.title} size={{ xs: 12, sm: 6, md: 4 }}>
                 <Card sx={{ height: '100%' }}>
                   <CardActionArea component={Link} href={f.href} sx={{ height: '100%' }}>
                     <CardContent>

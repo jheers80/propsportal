@@ -31,8 +31,12 @@ export default function LoginPage() {
         // Refresh the page to let the middleware handle the redirect
         router.refresh();
       }
-    } catch (error: any) {
-      setError(error.message);
+  } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('Login failed.');
+      }
     }
   };
 

@@ -1,5 +1,4 @@
 import { Person, Storefront, Key } from "@mui/icons-material";
-import { info } from "console";
 const adminRoutes=
     [
         {name:'Users',path:'/admin/users',icon:<Person/>, info:'Manage application users and their roles.'},

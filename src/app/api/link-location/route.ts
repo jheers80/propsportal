@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const passphrase: string | undefined = body?.passphrase;
   if (!passphrase) return NextResponse.json({ error: 'passphrase required' }, { status: 400 });
 
-  let response = NextResponse.next();
+  const response = NextResponse.next();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

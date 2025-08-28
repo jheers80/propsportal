@@ -84,8 +84,12 @@ export default function PassphraseManager() {
       if (!res.ok) throw new Error(data.error || 'Failed to generate');
       setGeneratedPassphrase(data.passphrase);
       await refreshList();
-    } catch (e: any) {
-      setError(e.message || 'Failed to generate passphrase.');
+  } catch (e: unknown) {
+      if (e instanceof Error) {
+        setError(e.message);
+      } else {
+        setError('Failed to generate passphrase.');
+      }
     } finally {
       setLoading(false);
     }

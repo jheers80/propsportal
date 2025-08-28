@@ -23,8 +23,12 @@ export default function LinkLocationPage() {
       if (!res.ok) throw new Error(data.error || data.message || 'Failed to link');
       setMessage('Location successfully linked to your account.');
       setPassphrase('');
-    } catch (e: any) {
-      setError(e.message);
+  } catch (e: unknown) {
+      if (e instanceof Error) {
+        setError(e.message);
+      } else {
+        setError('Failed to link location.');
+      }
     } finally {
       setLoading(false);
     }

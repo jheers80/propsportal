@@ -19,7 +19,6 @@ import {
 import { Edit as EditIcon, Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import Navbar from '@/components/Navbar';
 import { supabase } from '@/lib/supabaseClient';
-import Link from 'next/link';
 
 export default function ProfilePage() {
   const { user, profile, locations, loading, error, setProfile } = useUser();
@@ -81,7 +80,7 @@ export default function ProfilePage() {
             <CircularProgress />
           ) : error ? (
             <Typography color="error">
-              Error loading profile: {error.message}
+              Error loading profile: {error instanceof Error ? error.message : String(error)}
             </Typography>
           ) : user && profile ? (
             <Card sx={{ width: '100%', mt: 4 }}>

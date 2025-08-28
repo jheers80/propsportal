@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import AddUserForm from '@/components/AddUserForm';
 import UsersList from '@/components/UsersList';
-import UserLocationsManager from '@/components/UserLocationsManager';
+{/* import UserLocationsManager from '@/components/UserLocationsManager';*/}
 
 type Profile = {
   id: string;

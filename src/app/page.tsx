@@ -1,16 +1,14 @@
 'use client';
 import Navbar from '@/components/Navbar';
 import Link from 'next/link';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Container,
-  Grid,
-  Stack,
-  Typography,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Container from '@mui/material/Container';
+import Grid from '@mui/material/Grid';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 
 export default function HomePage() {
   return (
@@ -68,7 +66,7 @@ export default function HomePage() {
       {/* Value Props / Features */}
       <Container component="section" maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
         <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
@@ -81,7 +79,7 @@ export default function HomePage() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
@@ -94,7 +92,7 @@ export default function HomePage() {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs: 12, md: 4 }}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
@@ -116,7 +114,7 @@ export default function HomePage() {
             How it works
           </Typography>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
@@ -128,7 +126,7 @@ export default function HomePage() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
@@ -140,7 +138,7 @@ export default function HomePage() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
@@ -187,7 +185,7 @@ export default function HomePage() {
             title: 'Superadmin',
             desc: 'Full administrative access across the system.',
           }].map((role) => (
-            <Grid key={role.title} item xs={12} sm={6} md={4}>
+            <Grid key={role.title} size={{ xs: 12, sm: 6, md: 4 }}>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
@@ -205,7 +203,7 @@ export default function HomePage() {
       <Box sx={{ backgroundColor: 'background.default', py: { xs: 6, md: 10 } }}>
         <Container component="section" maxWidth="lg">
           <Grid container spacing={3} alignItems="stretch">
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
@@ -226,7 +224,7 @@ export default function HomePage() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>

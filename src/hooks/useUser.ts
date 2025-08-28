@@ -20,7 +20,7 @@ export function useUser() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<any>(null);
+  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     const fetchUser = async () => {

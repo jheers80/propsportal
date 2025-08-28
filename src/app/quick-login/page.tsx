@@ -34,8 +34,12 @@ export default function QuickLoginPage() {
       setSuccess('Quick access granted for 1 hour.');
       // Optional: redirect to a store-specific page or dashboard
       router.push('/');
-    } catch (e: any) {
-      setError(e.message || 'Invalid passphrase or login failed.');
+  } catch (e: unknown) {
+      if (e instanceof Error) {
+        setError(e.message);
+      } else {
+        setError('Invalid passphrase or login failed.');
+      }
     } finally {
       setLoading(false);
     }

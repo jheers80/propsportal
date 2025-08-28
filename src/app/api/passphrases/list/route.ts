@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
 export async function GET(req: NextRequest) {
-  let response = NextResponse.next();
+  const response = NextResponse.next();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
     .select('location_id, passphrase, created_at, locations:location_id(id, store_id, store_name)')
     .in('location_id', (
       await supabase.from('user_locations').select('location_id').eq('user_id', user.id)
-    ).data?.map((r: any) => r.location_id) || []);
+  ).data?.map((r: { location_id: string }) => r.location_id) || []);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ passphrases: data });

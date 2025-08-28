@@ -45,7 +45,7 @@ export default function Navbar() {
     handleClose();
     router.push('/admin/');
   };
-
+console.log("[Navbar]User: ", user);
   return (
     <AppBar position="static">
       <Toolbar>
