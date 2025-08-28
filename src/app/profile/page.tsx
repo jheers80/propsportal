@@ -9,16 +9,17 @@ import {
   CardContent,
   CircularProgress,
   TextField,
-  Button,
   List,
   ListItem,
   ListItemText,
   IconButton,
+  Button,
   Alert,
 } from '@mui/material';
 import { Edit as EditIcon, Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import Navbar from '@/components/Navbar';
 import { supabase } from '@/lib/supabaseClient';
+import Link from 'next/link';
 
 export default function ProfilePage() {
   const { user, profile, locations, loading, error, setProfile } = useUser();
@@ -125,6 +126,7 @@ export default function ProfilePage() {
                 <Typography variant="h6" sx={{ mt: 4 }}>
                   Assigned Locations
                 </Typography>
+                <Button variant='outlined' href="/link-location" sx={{m:2}}>Link A Location</Button>
                 {locations.length > 0 ? (
                   <List>
                     {locations.map((location) => (

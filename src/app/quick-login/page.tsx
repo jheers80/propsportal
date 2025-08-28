@@ -9,30 +9,33 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 
 export default function QuickLoginPage() {
   const [passphrase, setPassphrase] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
 
   const handleLogin = async () => {
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
-      // This would be a call to a serverless function that validates the passphrase
-      // and creates a session. For now, we'll just simulate a successful login.
-      console.log('Logging in with passphrase:', passphrase);
-      
-      // Simulate a successful login and redirect
-      // In a real implementation, you would set a session cookie here.
-      router.push('/'); 
-
-    } catch (e) {
-      setError('Invalid passphrase or login failed.');
+      const res = await fetch('/api/quick-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passphrase }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
+      setSuccess('Quick access granted for 1 hour.');
+      // Optional: redirect to a store-specific page or dashboard
+      router.push('/');
+    } catch (e: any) {
+      setError(e.message || 'Invalid passphrase or login failed.');
     } finally {
       setLoading(false);
     }
@@ -73,6 +76,7 @@ export default function QuickLoginPage() {
             {loading ? <CircularProgress size={24} /> : 'Login'}
           </Button>
           {error && <Alert severity="error">{error}</Alert>}
+          {success && <Alert severity="success">{success}</Alert>}
         </Box>
       </Box>
     </Container>

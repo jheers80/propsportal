@@ -13,12 +13,24 @@ import {
   CircularProgress,
   Alert,
   SelectChangeEvent,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
 } from '@mui/material';
 import { supabase } from '@/lib/supabaseClient';
 
 interface Location {
   id: number;
   store_name: string;
+  store_id?: string;
+}
+
+interface ListedPassphrase {
+  location_id: number;
+  passphrase: string;
+  created_at: string;
+  locations: { id: number; store_id: string; store_name: string };
 }
 
 export default function PassphraseManager() {
@@ -27,10 +39,22 @@ export default function PassphraseManager() {
   const [generatedPassphrase, setGeneratedPassphrase] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [list, setList] = useState<ListedPassphrase[]>([]);
+  const [listLoading, setListLoading] = useState(false);
+
+  const refreshList = async () => {
+    setListLoading(true);
+    const res = await fetch('/api/passphrases/list');
+    const data = await res.json();
+    if (res.ok) {
+      setList(data.passphrases || []);
+    }
+    setListLoading(false);
+  };
 
   useEffect(() => {
     const fetchLocations = async () => {
-      const { data, error } = await supabase.from('locations').select('id, store_name');
+      const { data, error } = await supabase.from('locations').select('id, store_name, store_id');
       if (error) {
         setError('Failed to fetch locations.');
       } else {
@@ -38,6 +62,7 @@ export default function PassphraseManager() {
       }
     };
     fetchLocations();
+    refreshList();
   }, []);
 
   const handleGenerate = async () => {
@@ -50,15 +75,17 @@ export default function PassphraseManager() {
     setGeneratedPassphrase('');
 
     try {
-      // In a real app, you'd call a serverless function to generate a secure passphrase
-      // and store its hash. For now, we'll simulate it.
-      const words = ['apple', 'banana', 'cherry', 'date', 'elderberry', 'fig', 'grape'];
-      const passphrase = [1, 2, 3].map(() => words[Math.floor(Math.random() * words.length)]).join('-');
-      
-      setGeneratedPassphrase(passphrase);
-
-    } catch (e) {
-      setError('Failed to generate passphrase.');
+      const res = await fetch('/api/passphrases/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locationId: Number(selectedLocation) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to generate');
+      setGeneratedPassphrase(data.passphrase);
+      await refreshList();
+    } catch (e: any) {
+      setError(e.message || 'Failed to generate passphrase.');
     } finally {
       setLoading(false);
     }
@@ -84,7 +111,7 @@ export default function PassphraseManager() {
           >
             {locations.map((loc) => (
               <MenuItem key={loc.id} value={loc.id.toString()}>
-                {loc.store_name}
+                {loc.store_id ? `${loc.store_id} - ${loc.store_name}` : loc.store_name}
               </MenuItem>
             ))}
           </Select>
@@ -100,12 +127,31 @@ export default function PassphraseManager() {
         {generatedPassphrase && (
           <Box sx={{ mt: 3, p: 2, border: '1px dashed grey', borderRadius: 1 }}>
             <Typography variant="h6" align="center">
-              Your new passphrase is:
+              New passphrase:
             </Typography>
             <Typography variant="h4" align="center" sx={{ mt: 1, color: 'primary.main' }}>
               {generatedPassphrase}
             </Typography>
           </Box>
+        )}
+        <Divider sx={{ my: 3 }} />
+        <Typography variant="h6" sx={{ mb: 1 }}>Current Passphrases You Can View</Typography>
+        {listLoading ? (
+          <CircularProgress />
+        ) : (
+          <List>
+            {list.map((p) => (
+              <ListItem key={p.location_id} divider>
+                <ListItemText
+                  primary={`${p.locations.store_id} - ${p.locations.store_name}`}
+                  secondary={`Passphrase: ${p.passphrase} • Updated: ${new Date(p.created_at).toLocaleString()}`}
+                />
+              </ListItem>
+            ))}
+            {list.length === 0 && (
+              <Typography color="text.secondary">No passphrases available.</Typography>
+            )}
+          </List>
         )}
       </CardContent>
     </Card>

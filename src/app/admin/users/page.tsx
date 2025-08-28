@@ -96,8 +96,8 @@ export default function AdminUsersPage() {
       {error && <Alert severity="error">{error}</Alert>}
       <UsersList users={users} selectedUser={selectedUser} onSelectUser={setSelectedUser} />
       <Divider orientation="vertical" flexItem />
-      <UserLocationsManager selectedUser={selectedUser} locations={locations} />
-      <Divider orientation="vertical" flexItem />
+     {/* <UserLocationsManager selectedUser={selectedUser} locations={locations} /> 
+      <Divider orientation="vertical" flexItem />*/}
       <AddUserForm onUserAdded={handleUserAdded} />
     </Box>
   );
