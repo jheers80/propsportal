@@ -1,3 +1,4 @@
+'use client';
 import AdminNavbar from '@/components/AdminNavbar';
 import Navbar from '@/components/Navbar';
 import { Box } from '@mui/material';

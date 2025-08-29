@@ -1,6 +1,6 @@
 'use client';
-
 import { useEffect, useState } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/lib/supabaseClient';
 import AddLocationForm from '@/components/AddLocationForm';
 import LocationsTable from '@/components/LocationsTable';
@@ -15,23 +15,31 @@ type Location = {
 };
 
 export default function LocationsPage() {
+  const { permissions, loading: permissionsLoading } = usePermissions();
   const [locations, setLocations] = useState<Location[]>([]);
 
-  useEffect(() => {
-    const fetchLocations = async () => {
-      const { data, error } = await supabase.from('locations').select('*');
-      if (error) {
-        console.error('Error fetching locations:', error);
-      } else {
-        setLocations(data);
-      }
-    };
-    fetchLocations();
-  }, []);
 
+  useEffect(() => {
+    async function fetchData() {
+            const { data:Locations, error:locationsError } = await supabase
+            .from('locations')
+            .select('*');
+      if  (locationsError) {
+      } else {
+        setLocations(Locations);
+    }
+  }
+    fetchData();
+  }, []);
+  if (permissionsLoading) {
+    return <div style={{ padding: 24 }}><h2>Loading...</h2></div>;
+  }
+  if (!permissions.includes('locations.view')) {
+    return <div style={{ padding: 24 }}><h2>Unauthorized</h2></div>;
+  }
   const handleLocationAdded = (location: Location) => {
     setLocations((prev) => [...prev, location]);
-    };
+  };
 
   return (
     <div>
@@ -39,7 +47,7 @@ export default function LocationsPage() {
       <AddLocationForm onLocationAdded={handleLocationAdded} />
       <LocationsTable locations={locations} 
         selectedLocation={null} 
-        onSelectLocation={( location: Location) => {console.log("[Location Table]: Clicked: "+ location.id)}} 
+  onSelectLocation={( location: Location) => {/* Removed debug log */}} 
       />
     </div>
   );

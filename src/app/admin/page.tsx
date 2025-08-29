@@ -1,9 +1,13 @@
-
+"use client";
 import { Typography, Card, Container,Box, Grid, CardActionArea} from '@mui/material';
 
 import adminRoutes from '../../lib/AdminRoutes';
 
 const AdminPage = () => {
+    const { profile } = require('@/hooks/useUser').useUser();
+    if (!profile || !['superadmin', 'manager', 'multiunit'].includes(profile.role)) {
+      return <Box sx={{ p: 3 }}><Typography variant="h6">Access Denied: Admins only.</Typography></Box>;
+    }
     return (
         <div>
                   <Typography component="h1" variant="h3">

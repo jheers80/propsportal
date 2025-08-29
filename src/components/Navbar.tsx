@@ -45,7 +45,6 @@ export default function Navbar() {
     handleClose();
     router.push('/admin/');
   };
-console.log("[Navbar]User: ", user);
   return (
     <AppBar position="static">
       <Toolbar>
@@ -86,7 +85,7 @@ console.log("[Navbar]User: ", user);
             onClose={handleClose}
           >
             <MenuItem onClick={handleProfile}>Profile</MenuItem>
-            {permissions.includes('users.create') && (
+            {(permissions.includes('users.create') || profile?.role === 'superadmin') && (
               <MenuItem onClick={handleAdmin}>Admin</MenuItem>
             )}
             <MenuItem onClick={handleLogout}>Logout</MenuItem>

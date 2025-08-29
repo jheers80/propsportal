@@ -1,7 +1,7 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { useUser } from '@/hooks/useUser';
 import { usePermissions } from '@/hooks/usePermissions';
 import {
   Box,
@@ -26,15 +26,16 @@ type Location = {
 };
 
 export default function AdminUsersPage() {
+  const { profile } = useUser();
   const { permissions, loading: permissionsLoading } = usePermissions();
   const [users, setUsers] = useState<Profile[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    async function fetchData() {
       setLoading(true);
       const { data: usersData, error: usersError } = await supabase
         .from('profiles')
@@ -42,7 +43,7 @@ export default function AdminUsersPage() {
       if (usersError) {
         setError(usersError.message);
       } else {
-        setUsers(usersData);
+        setUsers(usersData || []);
       }
 
       const { data: locationsData, error: locationsError } = await supabase
@@ -51,18 +52,19 @@ export default function AdminUsersPage() {
       if (locationsError) {
         setError(locationsError.message);
       } else {
-        setLocations(locationsData);
+        setLocations(locationsData || []);
       }
       setLoading(false);
-    };
+    }
     fetchData();
   }, []);
 
+  // Only return after all hooks are called
   if (permissionsLoading || loading) {
     return <p>Loading...</p>;
   }
 
-  if (!permissions.includes('users.create')) {
+  if (!permissions.includes('users.view')) {
     return (
       <Box
         sx={{

@@ -11,15 +11,9 @@ import {
   ListItemIcon,
 } from '@mui/material';
 import adminRoutes from '../lib/AdminRoutes';
-
-
 import Link from 'next/link';
 
-//const adminRoutes = [
-//  { path: '/admin/users', name: 'Users', icon:<Person/> },
-//  { path: '/admin/locations', name: 'Locations',icon: <Storefront/> },
-//  { path: '/admin/passphrases', name: 'Passphrases', icon:<Key/> },
-//];
+
 
 export default function AdminNavbar() {
 
