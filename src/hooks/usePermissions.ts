@@ -31,7 +31,6 @@ export function usePermissions() {
           console.error('Error fetching permissions:', error);
           setPermissions([]);
         } else {
-          console.log('Fetched permissions data:', data);
           // Supabase returns [{ permissions: { name: 'users.view' } }, ...]
           let names: string[] = [];
           if (Array.isArray(data)) {
@@ -44,7 +43,6 @@ export function usePermissions() {
               })
               .filter((name: string | null) => !!name) as string[];
           }
-          console.log('Parsed permission names:', names);
           setPermissions(names);
         }
         setLoading(false);
