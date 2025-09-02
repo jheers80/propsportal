@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { TextField, Button, Select, MenuItem, Checkbox, ListItemText, FormControl, InputLabel, OutlinedInput, Typography, Box } from '@mui/material';
+import { TextField, Button, Select, MenuItem, Checkbox, ListItemText, FormControl, InputLabel, OutlinedInput, Typography, Box, Switch } from '@mui/material';
 import { supabase } from '@/lib/supabaseClient';
 import { materialIcons } from '@/lib/materialIcons';
 import { useUser } from '@/hooks/useUser';
@@ -14,21 +14,23 @@ import { usePermissions } from '@/hooks/usePermissions';
     };
 
     type Feature = {
-      id?: string;
-      name: string;
-      link: string;
-      icon: string;
-      description: string;
-      roles: string[];
-      created_at?: string;
+  id?: string;
+  name: string;
+  link: string;
+  icon: string;
+  description: string;
+  roles: string[];
+  new_tab?: boolean;
+  created_at?: string;
     };
 
     const emptyFeature: Feature = {
-      name: '',
-      link: '',
-      icon: '',
-      description: '',
-      roles: [],
+  name: '',
+  link: '',
+  icon: '',
+  description: '',
+  roles: [],
+  new_tab: false,
     };
 
 
@@ -53,8 +55,13 @@ export default function FeaturesAdminPage() {
 
   async function fetchFeatures() {
     setLoading(true);
-    const { data, error } = await supabase.from('features').select('*');
-    if (!error && data) setFeatures(data);
+    try {
+      const res = await fetch('/api/features');
+      const json = await res.json();
+      if (json.features) setFeatures(json.features);
+    } catch (err) {
+      // Optionally handle error
+    }
     setLoading(false);
   }
 
@@ -87,9 +94,6 @@ export default function FeaturesAdminPage() {
   if (permissionsLoading) {
     return <Box sx={{ p: 3 }}><Typography>Loading...</Typography></Box>;
   }
-  if (!permissions.includes('features.view')) {
-    return <Box sx={{ p: 3 }}><Typography variant="h6">Unauthorized</Typography></Box>;
-  }
 
   return (
     <Box sx={{ p: 4 }}>
@@ -117,6 +121,19 @@ export default function FeaturesAdminPage() {
             ))}
           </Select>
         </FormControl>
+        <FormControl fullWidth margin="normal">
+          <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+            {/* Use MUI Slider for modern toggle, fallback to Checkbox if Slider is unavailable */}
+            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+              <Typography sx={{ mr: 2 }}>Open in new window</Typography>
+              <Switch
+                checked={!!form.new_tab}
+                onChange={e => setForm({ ...form, new_tab: e.target.checked })}
+                inputProps={{ 'aria-label': 'Open in new window' }}
+              />
+            </Box>
+          </Box>
+        </FormControl>
         {permissions.includes('features.create') && (
           <Button type="submit" variant="contained" color="primary" disabled={loading} sx={{ mt: 2 }}>{editingId ? 'Update' : 'Add'} Feature</Button>
         )}
@@ -130,6 +147,7 @@ export default function FeaturesAdminPage() {
             <Typography variant="body2">Link: {feature.link}</Typography>
             <Typography variant="body2">Icon: {feature.icon}</Typography>
             <Typography variant="body2">Roles: {feature.roles.join(', ')}</Typography>
+            <Typography variant="body2">Open in new window: {feature.new_tab ? 'Yes' : 'No'}</Typography>
             <Button onClick={() => handleEdit(feature)} sx={{ mr: 2 }}>Edit</Button>
             <Button onClick={() => handleDelete(feature.id!)} color="error">Delete</Button>
           </Box>

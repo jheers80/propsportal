@@ -27,6 +27,29 @@ export function useUser() {
       setLoading(true);
       setError(null);
       try {
+        // Check for quick-access-session cookie
+        let quickSession = null;
+        if (typeof document !== 'undefined') {
+          const match = document.cookie.match(/quick-access-session=([^;]+)/);
+          if (match) {
+            try {
+              quickSession = JSON.parse(decodeURIComponent(match[1]));
+            } catch (e) {
+              quickSession = null;
+            }
+          }
+        }
+
+        if (quickSession && quickSession.valid && quickSession.expires > Date.now()) {
+          // Treat as authenticated user with limited profile
+          setUser({ id: 'quick-access', email: 'quick@access', aud: '', role: 'quickaccess' } as User);
+          setProfile({ id: 'quick-access', role: 'quickaccess', created_at: '', full_name: 'Quick Access User' });
+          setLocations([]);
+          setLoading(false);
+          return;
+        }
+
+        // Fallback to normal Supabase auth
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError) throw userError;
         setUser(user);

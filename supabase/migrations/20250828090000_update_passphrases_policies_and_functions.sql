@@ -99,7 +99,7 @@ BEGIN
   INSERT INTO public.quick_access_sessions (location_id, passphrase_hash, expires_at, role)
   VALUES (
     v_location_id,
-    encode(digest(p_passphrase, 'sha256'), 'hex'),
+  encode(digest(convert_to(p_passphrase::text, 'UTF8'), 'sha256'::text), 'hex'),
     now() + interval '1 hour',
     p_role
   );

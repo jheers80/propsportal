@@ -10,7 +10,7 @@ import {
   Typography,
 } from '@mui/material';
 import * as MuiIcons from '@mui/icons-material';
-import Grid from '@mui/material/Grid';
+import { Grid } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useUser } from '@/hooks/useUser';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -22,15 +22,11 @@ export default function PortalPage() {
   useEffect(() => {
     async function fetchFeatures() {
       setLoading(true);
-      console.log('Fetching features from /api/features');
       const res = await fetch('/api/features');
       const json = await res.json();
-      console.log('Raw API response:', json);
       if (json.features) {
         setFeatures(json.features);
-        console.log('Features set:', json.features);
       } else {
-        console.log('No features found in API response');
       }
       setLoading(false);
     }
@@ -61,56 +57,41 @@ export default function PortalPage() {
               <CircularProgress />
             </Box>
           ) : (
-            <Grid container spacing={3}>
-               {features
-                 .filter(f => {
-                   let featureRoles: string[] = [];
-                   if (Array.isArray(f.roles)) {
-                     featureRoles = f.roles;
-                   } else if (typeof f.roles === 'string') {
-                     try {
-                       featureRoles = JSON.parse(f.roles);
-                     } catch {
-                       featureRoles = f.roles.split(',');
-                     }
-                   }
-                   // Debug output
-                   console.log('User role:', profile?.role);
-                   console.log('Feature:', f.name, 'Feature roles:', featureRoles);
-                   const result = hasRole(featureRoles);
-                   console.log('Should show card:', result);
-                   return result;
-                 })
-                .map((f) => {
-                  // Convert icon name to PascalCase and append 'Icon' if needed
-                    // Convert snake_case or lowercase to PascalCase for Material UI icons
-                    function toPascalCase(str: string) {
-                      return str
-                        .split('_')
-                        .map(s => s.charAt(0).toUpperCase() + s.slice(1))
-                        .join('');
-                    }
-                    const iconName = f.icon && typeof f.icon === 'string'
+            <Grid container spacing={4}>
+              {features.map((f) => {
+                  function toPascalCase(str: string) {
+                    return str
+                      .split('_')
+                      .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+                      .join('');
+                  }
+                  const iconName = f.icon && typeof f.icon === 'string'
                       ? toPascalCase(f.icon)
-                      : 'Widgets';
-                  // Debug: log icon name and existence
-                  console.log('Feature:', f.name, 'Raw icon:', f.icon, 'Mapped icon:', iconName);
+                    : 'Widgets';
                   const IconComponent = MuiIcons[iconName as keyof typeof MuiIcons] || MuiIcons['Widgets'];
-                  console.log('IconComponent exists:', !!MuiIcons[iconName as keyof typeof MuiIcons]);
+                  const openInNewTab = !!f.new_tab;
                   return (
-                    <div key={f.id} style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}>
-                      <Card sx={{ height: '100%' }}>
-                        <CardActionArea component="a" href={f.link} target="_blank" rel="noopener noreferrer" sx={{ height: '100%' }}>
-                          <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                              <Box sx={{ mr: 1, color: 'primary.main' }}>{IconComponent && <IconComponent />}</Box>
+                    <Grid key={f.id} sx={{ display: 'flex' }}>
+                      <Card sx={{ width: '100%', maxWidth: 340, margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column', boxShadow: 3 }}>
+                        <CardActionArea
+                          component="a"
+                          href={f.link}
+                          target={openInNewTab ? '_blank' : '_self'}
+                          rel={openInNewTab ? 'noopener noreferrer' : undefined}
+                          sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
+                        >
+                          <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                              <Box sx={{ mr: 2, color: 'primary.main', display: 'flex', alignItems: 'center' }}>
+                                {IconComponent && <IconComponent fontSize="large" />}
+                              </Box>
                               <Typography variant="h6" sx={{ fontWeight: 700 }}>{f.name}</Typography>
                             </Box>
-                            <Typography color="text.secondary">{f.description}</Typography>
+                            <Typography color="text.secondary" sx={{ wordBreak: 'break-word' }}>{f.description}</Typography>
                           </CardContent>
                         </CardActionArea>
                       </Card>
-                    </div>
+                    </Grid>
                   );
                 })}
             </Grid>

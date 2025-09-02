@@ -26,18 +26,36 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/portal', request.url));
   }
 
-  // Placeholder for quick access session validation and timeout logic
+  // Quick access session validation and timeout logic
   if (quickAccessCookie) {
-    console.log('Quick access session found. Implement validation and timeout logic here.');
-    // 1. Decrypt and validate the cookie
-    // 2. Check for expiration/inactivity
-    // 3. If invalid or expired, clear the cookie and redirect to login
+    // Example: Assume cookie value is a JSON string with { valid: true, expires: timestamp }
+    try {
+      const quickSession = JSON.parse(quickAccessCookie.value);
+      const now = Date.now();
+      if (!quickSession.valid || quickSession.expires < now) {
+        // Expired or invalid quick session
+        const res = NextResponse.redirect(new URL('/login', request.url));
+        res.cookies.delete('quick-access-session');
+        return res;
+      }
+      // Valid quick session: allow access to /portal and protected routes
+      if (request.nextUrl.pathname === '/portal' || request.nextUrl.pathname.startsWith('/portal')) {
+        return response;
+      }
+      // For other protected routes, optionally restrict access
+      // (You can add more logic here if needed)
+    } catch (e) {
+      // Malformed cookie, treat as invalid
+      const res = NextResponse.redirect(new URL('/login', request.url));
+      res.cookies.delete('quick-access-session');
+      return res;
+    }
   }
 
     // Role/permission-based route protection
     const protectedRoutes = [
       { path: '/profile', roles: ['superadmin', 'manager', 'multiunit', 'user'] },
-      { path: '/portal', roles: ['superadmin', 'manager', 'multiunit', 'user'] },
+      { path: '/portal', roles: ['superadmin', 'manager', 'multiunit', 'user', 'quick'] },
       { path: '/link-location', roles: ['superadmin', 'manager', 'multiunit'] },
       { path: '/admin', roles: ['superadmin', 'manager', 'multiunit'] },
       { path: '/admin/features', roles: ['superadmin'] },
@@ -47,8 +65,31 @@ export async function middleware(request: NextRequest) {
       { path: '/admin/roles-permissions', roles: ['superadmin'] },
     ];
 
+    // If quick access session is present and valid, allow /portal and subroutes
+    if (quickAccessCookie) {
+      try {
+        const quickSession = JSON.parse(quickAccessCookie.value);
+        const now = Date.now();
+        if (quickSession.valid && quickSession.expires > now) {
+          if (request.nextUrl.pathname === '/portal' || request.nextUrl.pathname.startsWith('/portal')) {
+            return response;
+          }
+          // For other protected routes, restrict access
+          for (const route of protectedRoutes) {
+            if (request.nextUrl.pathname.startsWith(route.path) && route.path !== '/portal') {
+              return NextResponse.redirect(new URL('/portal', request.url));
+            }
+          }
+        }
+      } catch (e) {
+        // Malformed cookie, treat as invalid
+        const res = NextResponse.redirect(new URL('/login', request.url));
+        res.cookies.delete('quick-access-session');
+        return res;
+      }
+    }
+
     // Only check protected routes if session exists
-    // Securely get user from Supabase Auth server
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userData?.user) {
       // Get user profile from supabase

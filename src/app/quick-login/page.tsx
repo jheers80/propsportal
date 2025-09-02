@@ -12,11 +12,12 @@ import {
 import { useRouter } from 'next/navigation';
 
 export default function QuickLoginPage() {
-  const [passphrase, setPassphrase] = useState('');
+  const [p_passphrase, setp_Passphrase] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
+  const p_role="staff";
 
   const handleLogin = async () => {
     setLoading(true);
@@ -27,13 +28,13 @@ export default function QuickLoginPage() {
       const res = await fetch('/api/quick-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passphrase }),
+        body: JSON.stringify({ p_passphrase, p_role }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
       setSuccess('Quick access granted for 1 hour.');
       // Optional: redirect to a store-specific page or dashboard
-      router.push('/');
+      router.push('/portal/');
   } catch (e: unknown) {
       if (e instanceof Error) {
         setError(e.message);
@@ -63,12 +64,12 @@ export default function QuickLoginPage() {
             margin="normal"
             required
             fullWidth
-            id="passphrase"
+            id="p_passphrase"
             label="3-Word Passphrase"
-            name="passphrase"
+            name="p_passphrase"
             autoFocus
-            value={passphrase}
-            onChange={(e) => setPassphrase(e.target.value)}
+            value={p_passphrase}
+            onChange={(e) => setp_Passphrase(e.target.value)}
           />
           <Button
             type="submit"

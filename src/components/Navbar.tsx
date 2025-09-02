@@ -31,7 +31,14 @@ export default function Navbar() {
   };
 
   const handleLogout = async () => {
+    // Call API to clear quick-access-session cookie server-side
+    await fetch('/api/logout', { method: 'POST' });
+    // Sign out from Supabase for regular users
     await supabase.auth.signOut();
+    // Also clear client-side cookie for good measure
+    if (typeof document !== 'undefined') {
+      document.cookie = 'quick-access-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT;';
+    }
     handleClose();
     router.replace('/');
   };
