@@ -1,21 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Create Supabase client with service role key for admin operations
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-);
-
 // GET - Fetch all roles, permissions, and role-permissions
 export async function GET(request: NextRequest) {
   try {
+    // Create Supabase client with service role key for admin operations
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
     // Get the current user from the session
     const authHeader = request.headers.get('authorization');
     if (!authHeader) {
@@ -86,6 +86,18 @@ export async function GET(request: NextRequest) {
 // POST - Handle various operations (add role, add permission, assign/unassign permission)
 export async function POST(request: NextRequest) {
   try {
+    // Create Supabase client with service role key for admin operations
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
     // Get the current user from the session
     const authHeader = request.headers.get('authorization');
     if (!authHeader) {

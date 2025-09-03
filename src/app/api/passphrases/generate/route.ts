@@ -43,9 +43,19 @@ export async function POST(req: NextRequest) {
   // Authorization via RLS will guard the update. We can also pre-check that user has access
   // by verifying they are superadmin or assigned to the location with manager/multiunit.
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  const role = profile?.role as string | undefined;
 
-  if (role !== 'superadmin') {
+  // Get the actual role name from user_roles table
+  const { data: userRole, error: roleError } = await supabase
+    .from('user_roles')
+    .select('name')
+    .eq('id', profile?.role)
+    .single();
+
+  if (roleError) return NextResponse.json({ error: 'Failed to verify role' }, { status: 500 });
+
+  const roleName = userRole?.name;
+
+  if (roleName !== 'superadmin') {
     // must be assigned to that location
     const { data: assignment } = await supabase
       .from('user_locations')
@@ -56,7 +66,7 @@ export async function POST(req: NextRequest) {
     if (!assignment) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    if (!(role === 'manager' || role === 'multiunit')) {
+    if (!(roleName === 'manager' || roleName === 'multiunit')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
   }

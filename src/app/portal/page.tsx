@@ -26,6 +26,7 @@ interface UserProfile {
 interface Feature {
   id: string;
   name: string;
+  display_name?: string;
   link: string;
   icon: string;
   description: string;
@@ -41,11 +42,17 @@ export default function PortalPage() {
   useEffect(() => {
     async function fetchFeatures() {
       setLoading(true);
-      const res = await fetch('/api/features');
-      const json = await res.json();
-      if (json.features) {
-        setFeatures(json.features);
-      } else {
+      try {
+        const res = await fetch('/api/features');
+        const json = await res.json();
+        console.log('Features API response:', json);
+        console.log('Features array length:', json.features?.length || 0);
+        if (json.features) {
+          console.log('First feature:', json.features[0]);
+          setFeatures(json.features);
+        }
+      } catch (error) {
+        console.error('Error fetching features:', error);
       }
       setLoading(false);
     }
@@ -56,10 +63,27 @@ export default function PortalPage() {
   function hasRole(featureRoles: string[]) {
     if (!featureRoles || featureRoles.length === 0) return true;
     const userProfile = profile as UserProfile | null;
-    if (!userProfile?.role) return false;
-    // Convert role number to string for comparison
-    const userRole = typeof userProfile.role === 'number' ? userProfile.role.toString() : userProfile.role;
-    return featureRoles.some(role => role.trim().toLowerCase() === userRole.trim().toLowerCase());
+    if (!userProfile?.role) {
+      return false;
+    }
+    
+    // Convert role ID to role name for comparison
+    const roleIdToName: { [key: number]: string } = {
+      1: 'superadmin',
+      2: 'multiunit',
+      3: 'manager',
+      4: 'staff',
+      5: 'quickaccess',
+      6: 'unknown' // Add role 6 as unknown for now
+    };
+    
+    const userRoleId = typeof userProfile.role === 'number' ? userProfile.role : parseInt(userProfile.role);
+    const userRoleName = roleIdToName[userRoleId] || userProfile.role.toString().toLowerCase();
+    
+    const hasAccess = featureRoles.some(role => role.trim().toLowerCase() === userRoleName.trim().toLowerCase());
+    console.log('Role check:', { userRoleId, userRoleName, featureRoles, hasAccess, profileRole: userProfile.role });
+    
+    return hasAccess;
   }
 
   return (
@@ -80,7 +104,19 @@ export default function PortalPage() {
             </Box>
           ) : (
             <Grid container spacing={4}>
-              {features.filter(f => hasRole(f.roles)).map((f) => {
+              {features
+                .filter(f => {
+                  // Only filter by role if profile is loaded
+                  if (!profile) {
+                    console.log('Profile not loaded yet, showing all features');
+                    return true; // Show all features if profile not loaded
+                  }
+                  const hasAccess = hasRole(f.roles);
+                  console.log('Feature filter:', { feature: f.display_name || f.name, roles: f.roles, hasAccess });
+                  return hasAccess;
+                })
+                .map((f) => {
+                  console.log('Rendering feature:', f.display_name || f.name);;
                   function toPascalCase(str: string) {
                     return str
                       .split('_')
@@ -107,7 +143,7 @@ export default function PortalPage() {
                               <Box sx={{ mr: 2, color: 'primary.main', display: 'flex', alignItems: 'center' }}>
                                 {IconComponent && <IconComponent fontSize="large" />}
                               </Box>
-                              <Typography variant="h6" sx={{ fontWeight: 700 }}>{f.name}</Typography>
+                              <Typography variant="h6" sx={{ fontWeight: 700 }}>{f.display_name || f.name}</Typography>
                             </Box>
                             <Typography color="text.secondary" sx={{ wordBreak: 'break-word' }}>{f.description}</Typography>
                           </CardContent>

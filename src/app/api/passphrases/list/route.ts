@@ -29,9 +29,18 @@ export async function GET(req: NextRequest) {
     .single();
   if (profileError) return NextResponse.json({ error: profileError.message }, { status: 400 });
 
-  const role = profile?.role as string | undefined;
+  // Get the actual role name from user_roles table
+  const { data: userRole, error: roleError } = await supabase
+    .from('user_roles')
+    .select('name')
+    .eq('id', profile.role)
+    .single();
 
-  if (role === 'superadmin') {
+  if (roleError) return NextResponse.json({ error: 'Failed to verify role' }, { status: 500 });
+
+  const roleName = userRole?.name;
+
+  if (roleName === 'superadmin') {
     // superadmin can view all
     const { data, error } = await supabase
       .from('passphrases')

@@ -9,6 +9,17 @@ import { usePermissions } from '@/hooks/usePermissions';
 const RolesPermissionsPage = () => {
   const { profile } = useAuth();
   const { permissions, loading: permissionsLoading } = usePermissions();
+
+  // Helper function to check if user is superadmin
+  const isSuperAdmin = () => {
+    return profile && typeof profile === 'object' && 'role' in profile && (profile as { role?: number }).role === 1;
+  };
+
+  // Helper function to check permissions (allows superadmin bypass)
+  const hasPermission = (permission: string) => {
+    return isSuperAdmin() || permissions.includes(permission);
+  };
+
   type UserRole = { id: number; name: string };
   type Permission = { id: number; name: string };
   type RolePermission = { role: number; permission_id: number };
@@ -71,13 +82,13 @@ const RolesPermissionsPage = () => {
 
   useEffect(() => {
     if (!profile || permissionsLoading) return;
-    if (!permissions.includes('roles-permissions.view')) return;
+    if (!hasPermission('roles-permissions.view')) return;
     fetchData();
   }, [profile, permissions, permissionsLoading]);
 
   // Add permission to role
   const handleAddPermissionToRole = async (role: number, permission_id: number) => {
-    if (!permissions.includes('roles-permissions.edit')) {
+    if (!hasPermission('roles-permissions.edit')) {
       setError('You do not have permission to add permissions to a role.');
       return;
     }
@@ -123,7 +134,7 @@ const RolesPermissionsPage = () => {
 
   // Delete permission from role
   const handleDeletePermissionFromRole = async (role: number, permission_id: number) => {
-    if (!permissions.includes('roles-permissions.edit')) {
+    if (!hasPermission('roles-permissions.edit')) {
       setError('You do not have permission to delete permissions from a role.');
       return;
     }
@@ -236,7 +247,7 @@ const RolesPermissionsPage = () => {
     setLoading(false);
   };
   const handleDeleteRole = async (roleId: number) => {
-    if (!permissions.includes('roles-permissions.delete')) {
+    if (!hasPermission('roles-permissions.delete')) {
       setError('You do not have permission to delete roles.');
       return;
     }
@@ -346,7 +357,7 @@ const RolesPermissionsPage = () => {
     setLoading(false);
   };
   const handleDeletePermission = async (permId: number) => {
-    if (!permissions.includes('roles-permissions.delete')) {
+    if (!hasPermission('roles-permissions.delete')) {
       setError('You do not have permission to delete permissions.');
       return;
     }
@@ -392,7 +403,7 @@ const RolesPermissionsPage = () => {
   if (permissionsLoading) {
     return <Box sx={{ p: 3 }}><Typography>Loading...</Typography></Box>;
   }
-  if (!profile || !permissions.includes('roles-permissions.view')) {
+  if (!profile || !hasPermission('roles-permissions.view')) {
     return <Box sx={{ p: 3 }}><Typography variant="h6">Access Denied: You do not have permission to view this page.</Typography></Box>;
   }
 
@@ -403,8 +414,8 @@ const RolesPermissionsPage = () => {
         {error && <Typography color="error">{error}</Typography>}
         {success && <Typography color="primary">{success}</Typography>}
         <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
-          <Button variant="contained" onClick={() => handleOpenRoleDialog('add')} disabled={!permissions.includes('roles-permissions.create')}>Add Role</Button>
-          <Button variant="contained" onClick={() => handleOpenPermissionDialog('add')} disabled={!permissions.includes('roles-permissions.create')}>Add Permission</Button>
+          <Button variant="contained" onClick={() => handleOpenRoleDialog('add')} disabled={!hasPermission('roles-permissions.create')}>Add Role</Button>
+          <Button variant="contained" onClick={() => handleOpenPermissionDialog('add')} disabled={!hasPermission('roles-permissions.create')}>Add Permission</Button>
         </Box>
         {loading ? (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -425,21 +436,21 @@ const RolesPermissionsPage = () => {
                 <TableRow key={role.id}>
                   <TableCell>{role.name}</TableCell>
                   <TableCell>
-                    <Button size="small" onClick={() => handleOpenRoleDialog('edit', role)} disabled={!permissions.includes('roles-permissions.edit')}>Edit</Button>
-                    <Button size="small" color="error" onClick={() => handleDeleteRole(role.id)} disabled={!permissions.includes('roles-permissions.delete')}>Delete</Button>
+                    <Button size="small" onClick={() => handleOpenRoleDialog('edit', role)} disabled={!hasPermission('roles-permissions.edit')}>Edit</Button>
+                    <Button size="small" color="error" onClick={() => handleDeleteRole(role.id)} disabled={!hasPermission('roles-permissions.delete')}>Delete</Button>
                   </TableCell>
                   <TableCell>
                     {permissionList.map((perm) => {
-                      const hasPermission = rolePermissions.some((rp) => rp.role === role.id && rp.permission_id === perm.id);
+                      const roleHasPermission = rolePermissions.some((rp) => rp.role === role.id && rp.permission_id === perm.id);
                       return (
                         <Box key={perm.id} component="span" sx={{ mr: 1 }}>
-                          {hasPermission ? (
+                          {roleHasPermission ? (
                             <Button
                               variant="contained"
                               size="small"
                               color="error"
                               onClick={() => handleDeletePermissionFromRole(role.id, perm.id)}
-                              disabled={!permissions.includes('roles-permissions.edit')}
+                              disabled={!hasPermission('roles-permissions.edit')}
                             >
                               Remove: {perm.name}
                             </Button>
@@ -449,7 +460,7 @@ const RolesPermissionsPage = () => {
                               size="small"
                               color="primary"
                               onClick={() => handleAddPermissionToRole(role.id, perm.id)}
-                              disabled={!permissions.includes('roles-permissions.edit')}
+                              disabled={!hasPermission('roles-permissions.edit')}
                             >
                               Add: {perm.name}
                             </Button>
