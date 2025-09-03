@@ -1,7 +1,7 @@
 
 'use client';
-import { useState, useEffect } from 'react';
-import { Typography, Box, Container, Table, TableHead, TableRow, TableCell, TableBody, Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, CircularProgress } from '@mui/material';
+import { useState, useEffect, useCallback } from 'react';
+import { Typography, Box, Container, Table, TableHead, TableRow, TableCell, TableBody, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, CircularProgress } from '@mui/material';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -11,14 +11,14 @@ const RolesPermissionsPage = () => {
   const { permissions, loading: permissionsLoading } = usePermissions();
 
   // Helper function to check if user is superadmin
-  const isSuperAdmin = () => {
-    return profile && typeof profile === 'object' && 'role' in profile && (profile as { role?: number }).role === 1;
-  };
+  const isSuperAdmin = useCallback(() => {
+    return profile && typeof profile === 'object' && 'role' in profile && (profile as { role?: number | string }).role == 1;
+  }, [profile]);
 
   // Helper function to check permissions (allows superadmin bypass)
-  const hasPermission = (permission: string) => {
+  const hasPermission = useCallback((permission: string) => {
     return isSuperAdmin() || permissions.includes(permission);
-  };
+  }, [permissions, isSuperAdmin]);
 
   type UserRole = { id: number; name: string };
   type Permission = { id: number; name: string };
@@ -84,7 +84,7 @@ const RolesPermissionsPage = () => {
     if (!profile || permissionsLoading) return;
     if (!hasPermission('roles-permissions.view')) return;
     fetchData();
-  }, [profile, permissions, permissionsLoading]);
+  }, [profile, permissions, permissionsLoading, hasPermission]);
 
   // Add permission to role
   const handleAddPermissionToRole = async (role: number, permission_id: number) => {

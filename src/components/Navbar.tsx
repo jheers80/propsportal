@@ -10,7 +10,6 @@ import {
   Box,
 } from '@mui/material';
 import AccountCircle from '@mui/icons-material/AccountCircle';
-import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -37,7 +36,7 @@ export default function Navbar() {
       console.error('Logout API failed', e);
     }
     try {
-      await (signOut as any)();
+      await (signOut as () => Promise<void>)();
     } catch (e) {
       console.error('SignOut failed', e);
     }

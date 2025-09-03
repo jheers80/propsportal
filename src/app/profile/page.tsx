@@ -50,7 +50,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (profile) {
       setFullName(profile.full_name || '');
-      setIsSuperAdmin(profile.role === 1 || profile.role === 'superadmin');
+      setIsSuperAdmin(profile.role == 1 || profile.role === 'superadmin');
     }
   }, [profile]);
 

@@ -5,7 +5,7 @@ import type { User } from '@supabase/supabase-js';
 
 interface Profile {
   id: string;
-  role: string;
+  role: number | string;
   created_at: string;
   full_name: string;
 }
