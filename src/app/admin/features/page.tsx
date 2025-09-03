@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { TextField, Button, Select, MenuItem, Checkbox, ListItemText, FormControl, InputLabel, OutlinedInput, Typography, Box, Switch } from '@mui/material';
 import { supabase } from '@/lib/supabaseClient';
 import { materialIcons } from '@/lib/materialIcons';
-import { useUser } from '@/hooks/useUser';
+import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 
     type UserRole = {
@@ -35,7 +35,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 
 
 export default function FeaturesAdminPage() {
-  const { profile } = useUser();
+  const { profile } = useAuth();
   const { permissions, loading: permissionsLoading } = usePermissions();
   const [features, setFeatures] = useState<Feature[]>([]);
   const [form, setForm] = useState<Feature>(emptyFeature);
@@ -49,18 +49,54 @@ export default function FeaturesAdminPage() {
   }, []);
 
   async function fetchRoles() {
-    const { data, error } = await supabase.from('user_roles').select('*');
-    if (!error && data) setRolesList(data);
+    try {
+      // Get the access token for API calls
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        return;
+      }
+
+      const response = await fetch('/api/admin/features', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRolesList(data.roles || []);
+      }
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+    }
   }
 
   async function fetchFeatures() {
     setLoading(true);
     try {
-      const res = await fetch('/api/features');
-      const json = await res.json();
-      if (json.features) setFeatures(json.features);
+      // Get the access token for API calls
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/admin/features', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFeatures(data.features || []);
+      }
     } catch (err) {
-      // Optionally handle error
+      console.error('Error fetching features:', err);
     }
     setLoading(false);
   }
@@ -68,14 +104,47 @@ export default function FeaturesAdminPage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    if (editingId) {
-      await supabase.from('features').update(form).eq('id', editingId);
-    } else {
-      await supabase.from('features').insert([form]);
+
+    try {
+      // Get the access token for API calls
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setLoading(false);
+        return;
+      }
+
+      const action = editingId ? 'update' : 'create';
+      const requestBody = {
+        action,
+        ...form
+      };
+
+      if (editingId) {
+        requestBody.id = editingId;
+      }
+
+      const response = await fetch('/api/admin/features', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error saving feature:', errorData.error);
+        setLoading(false);
+        return;
+      }
+
+      setForm(emptyFeature);
+      setEditingId(null);
+      await fetchFeatures();
+    } catch (error) {
+      console.error('Error submitting feature:', error);
     }
-    setForm(emptyFeature);
-    setEditingId(null);
-    await fetchFeatures();
     setLoading(false);
   }
 
@@ -86,8 +155,38 @@ export default function FeaturesAdminPage() {
 
   async function handleDelete(id: string) {
     setLoading(true);
-    await supabase.from('features').delete().eq('id', id);
-    await fetchFeatures();
+
+    try {
+      // Get the access token for API calls
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/admin/features', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'delete',
+          id: id
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error deleting feature:', errorData.error);
+        setLoading(false);
+        return;
+      }
+
+      await fetchFeatures();
+    } catch (error) {
+      console.error('Error deleting feature:', error);
+    }
     setLoading(false);
   }
 

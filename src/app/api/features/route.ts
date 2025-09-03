@@ -1,32 +1,60 @@
 
-import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { validateQuickAccessSession } from '@/lib/sessionValidation';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+export async function GET(req: NextRequest) {
+  const response = NextResponse.next();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => req.cookies.get(name)?.value,
+        set: (name: string, value: string, options) => {
+          response.cookies.set({ name, value, ...options });
+        },
+        remove: (name: string, options) => {
+          response.cookies.set({ name, value: '', ...options });
+        },
+      },
+    }
+  );
 
-function getUserRoleFromRequest(req: Request) {
-  // Try to get quick-access-session cookie
-  const cookieHeader = req.headers.get('cookie') || '';
-  const match = cookieHeader.match(/quick-access-session=([^;]+)/);
-  if (match) {
-    try {
-      const quickSession = JSON.parse(decodeURIComponent(match[1]));
-      if (quickSession && quickSession.valid && quickSession.expires > Date.now()) {
-        return 'quickaccess';
-      }
-    } catch {}
+  // Check for quick-access-session cookie
+  const quickAccessCookie = req.cookies.get('quick-access-session');
+  let isQuickAccess = false;
+
+  if (quickAccessCookie) {
+    const validation = await validateQuickAccessSession(req, supabase);
+    if (validation.valid) {
+      isQuickAccess = true;
+    }
   }
-  // Fallback: get user profile from Supabase auth (if available)
-  // You may need to adjust this for your auth/session setup
-  return null;
-}
 
-export async function GET(req: Request) {
-  const role = getUserRoleFromRequest(req) || 'guest';
-  // Fetch features where the user's role is included in the roles array
+  if (isQuickAccess) {
+    // For quick access users, return features with 'quickaccess' role
+    const { data, error } = await supabase
+      .from('features')
+      .select('*')
+      .contains('roles', ['quickaccess']);
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ features: data });
+  }
+
+  // For regular authenticated users, get user and apply RLS
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Fetch features - RLS policy will automatically filter based on user role
   const { data, error } = await supabase
     .from('features')
     .select('*');
@@ -36,7 +64,5 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Only return features where the user's role is included in the roles array
-  const allowedFeatures = data.filter(f => Array.isArray(f.roles) && f.roles.includes(role));
-  return NextResponse.json({ features: allowedFeatures });
+  return NextResponse.json({ features: data });
 }

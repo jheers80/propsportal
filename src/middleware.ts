@@ -9,114 +9,62 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getSession();
 
   const quickAccessCookie = request.cookies.get('quick-access-session');
+  const pathname = request.nextUrl.pathname;
 
-  const isAuthRoute = request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/quick-login';
-  const isPublicRoot = request.nextUrl.pathname === '/';
+  // Public routes that don't require authentication
+  const publicRoutes = ['/', '/login', '/quick-login'];
+  const isPublicRoute = publicRoutes.includes(pathname);
 
-  // Allow root page without auth
-  if (isPublicRoot) {
+  // Auth routes - redirect to portal if already authenticated
+  const authRoutes = ['/login', '/quick-login'];
+  const isAuthRoute = authRoutes.includes(pathname);
+
+  // Allow access to public routes
+  if (isPublicRoute) {
     return response;
   }
 
-  if (!session && !quickAccessCookie && !isAuthRoute) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
+  // If user is authenticated and trying to access auth routes, redirect to portal
   if ((session || quickAccessCookie) && isAuthRoute) {
     return NextResponse.redirect(new URL('/portal', request.url));
   }
 
-  // Quick access session validation and timeout logic
-  if (quickAccessCookie) {
-    // Example: Assume cookie value is a JSON string with { valid: true, expires: timestamp }
+  // If user is not authenticated and trying to access protected routes, redirect to login
+  if (!session && !quickAccessCookie && !isAuthRoute) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  // Handle quick access session validation
+  if (quickAccessCookie && !session) {
     try {
       const quickSession = JSON.parse(quickAccessCookie.value);
       const now = Date.now();
+
       if (!quickSession.valid || quickSession.expires < now) {
-        // Expired or invalid quick session
+        // Invalid/expired session - clear cookie and redirect
         const res = NextResponse.redirect(new URL('/login', request.url));
         res.cookies.delete('quick-access-session');
         return res;
       }
-      // Valid quick session: allow access to /portal and protected routes
-      if (request.nextUrl.pathname === '/portal' || request.nextUrl.pathname.startsWith('/portal')) {
+
+      // Valid quick session - allow access to portal and sub-routes
+      if (pathname === '/portal' || pathname.startsWith('/portal/')) {
         return response;
       }
-      // For other protected routes, optionally restrict access
-      // (You can add more logic here if needed)
+
+      // For other routes, redirect quick access users to portal
+      return NextResponse.redirect(new URL('/portal', request.url));
+
     } catch (e) {
-      // Malformed cookie, treat as invalid
+      // Malformed cookie - clear and redirect
       const res = NextResponse.redirect(new URL('/login', request.url));
       res.cookies.delete('quick-access-session');
       return res;
     }
   }
 
-    // Role/permission-based route protection
-    const protectedRoutes = [
-      { path: '/profile', roles: ['superadmin', 'manager', 'multiunit', 'user'] },
-      { path: '/portal', roles: ['superadmin', 'manager', 'multiunit', 'user', 'quick'] },
-      { path: '/link-location', roles: ['superadmin', 'manager', 'multiunit'] },
-      { path: '/admin', roles: ['superadmin', 'manager', 'multiunit'] },
-      { path: '/admin/features', roles: ['superadmin'] },
-      { path: '/admin/locations', roles: ['superadmin'] },
-      { path: '/admin/passphrases', roles: ['superadmin', 'manager', 'multiunit'] },
-      { path: '/admin/users', roles: ['superadmin'] },
-      { path: '/admin/roles-permissions', roles: ['superadmin'] },
-    ];
-
-    // If quick access session is present and valid, allow /portal and subroutes
-    if (quickAccessCookie) {
-      try {
-        const quickSession = JSON.parse(quickAccessCookie.value);
-        const now = Date.now();
-        if (quickSession.valid && quickSession.expires > now) {
-          if (request.nextUrl.pathname === '/portal' || request.nextUrl.pathname.startsWith('/portal')) {
-            return response;
-          }
-          // For other protected routes, restrict access
-          for (const route of protectedRoutes) {
-            if (request.nextUrl.pathname.startsWith(route.path) && route.path !== '/portal') {
-              return NextResponse.redirect(new URL('/portal', request.url));
-            }
-          }
-        }
-      } catch (e) {
-        // Malformed cookie, treat as invalid
-        const res = NextResponse.redirect(new URL('/login', request.url));
-        res.cookies.delete('quick-access-session');
-        return res;
-      }
-    }
-
-    // Only check protected routes if session exists
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userData?.user) {
-      // Get user profile from supabase
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', userData.user.id)
-        .single();
-      if (!profileError && profileData) {
-        const userRole = profileData.role;
-        for (const route of protectedRoutes) {
-          if (request.nextUrl.pathname.startsWith(route.path)) {
-            if (!route.roles.includes(userRole)) {
-              return NextResponse.redirect(new URL('/portal', request.url));
-            }
-          }
-        }
-      }
-    } else {
-      // If not logged in, block protected routes except those explicitly allowed
-      for (const route of protectedRoutes) {
-        if (request.nextUrl.pathname.startsWith(route.path)) {
-          return NextResponse.redirect(new URL('/login', request.url));
-        }
-      }
-    }
-
+  // For authenticated users, allow access to all routes
+  // Role-based restrictions can be handled in the components themselves
   return response;
 }
 

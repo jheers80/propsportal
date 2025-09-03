@@ -12,14 +12,14 @@ import {
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@/hooks/useUser';
+import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import Link from 'next/link';
 
 export default function Navbar() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const router = useRouter();
-  const { user, profile } = useUser();
+  const { user, profile } = useAuth();
   const { permissions } = usePermissions();
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -63,7 +63,7 @@ export default function Navbar() {
         <Box sx={{ display: 'flex', alignItems: 'center', ml: 'auto' }}>
           {profile && (
             <Typography variant="h6" component="div" sx={{ mr: 2 }}>
-              {profile.full_name}
+              {(profile as { full_name?: string }).full_name}
             </Typography>
           )}
           <IconButton
@@ -92,7 +92,7 @@ export default function Navbar() {
             onClose={handleClose}
           >
             <MenuItem onClick={handleProfile}>Profile</MenuItem>
-            {(permissions.includes('users.create') || profile?.role === 'superadmin') && (
+            {(permissions.includes('users.create') || (profile as { role?: string | number })?.role === 'superadmin' || (profile as { role?: string | number })?.role === 1) && (
               <MenuItem onClick={handleAdmin}>Admin</MenuItem>
             )}
             <MenuItem onClick={handleLogout}>Logout</MenuItem>

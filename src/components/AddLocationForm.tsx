@@ -42,12 +42,47 @@ export default function AddLocationForm({ onLocationAdded }: AddLocationFormProp
   const handleAddLocation = async () => {
     setError(null);
     setSuccess(null);
-    const { data, error } = await supabase.from('locations').insert([newLocation]).select();
-    if (error) {
-      setError(error.message);
-    } else if (data) {
+
+    try {
+      // Get the access token for API calls
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError('Authentication required');
+        return;
+      }
+
+      const response = await fetch('/api/locations', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          store_name: newLocation.store_name,
+          store_id: newLocation.store_id,
+          address: '', // Address is not in the form, so we'll leave it empty
+          city: newLocation.city,
+          state: newLocation.state,
+          zip: newLocation.zip,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to add location');
+        return;
+      }
+
+      const data = await response.json();
       setSuccess('Location added successfully.');
-      onLocationAdded(data[0]);
+      onLocationAdded({
+        id: data.location.id,
+        store_id: data.location.store_id,
+        store_name: data.location.store_name,
+        city: data.location.city,
+        state: data.location.state,
+        zip: data.location.zip,
+      });
       setNewLocation({
         store_id: '',
         store_name: '',
@@ -55,6 +90,9 @@ export default function AddLocationForm({ onLocationAdded }: AddLocationFormProp
         state: '',
         zip: '',
       });
+    } catch (error) {
+      console.error('Error adding location:', error);
+      setError('An unexpected error occurred');
     }
   };
 

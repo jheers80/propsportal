@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { Typography, Box, Container, Table, TableHead, TableRow, TableCell, TableBody, Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, CircularProgress } from '@mui/material';
 import { supabase } from '@/lib/supabaseClient';
-import { useUser } from '@/hooks/useUser';
+import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 
 const RolesPermissionsPage = () => {
-  const { profile } = useUser();
+  const { profile } = useAuth();
   const { permissions, loading: permissionsLoading } = usePermissions();
   type UserRole = { id: number; name: string };
   type Permission = { id: number; name: string };
@@ -35,13 +35,35 @@ const RolesPermissionsPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data: userRolesData, error: userRolesError } = await supabase.from('user_roles').select('*');
-      const { data: permissionsData, error: permissionsError } = await supabase.from('permissions').select('*');
-      const { data: rolePermissionsData, error: rolePermissionsError } = await supabase.from('role_permissions').select('*');
-      setUserRoles(userRolesData || []);
-      setPermissionList(permissionsData || []);
-      setRolePermissions(rolePermissionsData || []);
+      // Get the access token for API calls
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError('Authentication required');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/admin/roles-permissions', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to fetch data');
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      setUserRoles(data.userRoles || []);
+      setPermissionList(data.permissions || []);
+      setRolePermissions(data.rolePermissions || []);
     } catch (err) {
+      console.error('Error fetching data:', err);
       setError('Unexpected error fetching data.');
     }
     setLoading(false);
@@ -62,10 +84,38 @@ const RolesPermissionsPage = () => {
     setLoading(true);
     setError(null);
     try {
-      await supabase.from('role_permissions').insert([{ role, permission_id }]);
+      // Get the access token for API calls
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError('Authentication required');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/admin/roles-permissions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'assign_permission',
+          roleId: role,
+          permissionId: permission_id
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to add permission to role');
+        setLoading(false);
+        return;
+      }
+
       setSuccess('Permission added to role.');
       await fetchData();
     } catch (err) {
+      console.error('Error adding permission to role:', err);
       setError('Failed to add permission to role.');
     }
     setLoading(false);
@@ -80,10 +130,38 @@ const RolesPermissionsPage = () => {
     setLoading(true);
     setError(null);
     try {
-      await supabase.from('role_permissions').delete().match({ role, permission_id });
+      // Get the access token for API calls
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError('Authentication required');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/admin/roles-permissions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'unassign_permission',
+          roleId: role,
+          permissionId: permission_id
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to remove permission from role');
+        setLoading(false);
+        return;
+      }
+
       setSuccess('Permission removed from role.');
       await fetchData();
     } catch (err) {
+      console.error('Error removing permission from role:', err);
       setError('Failed to remove permission from role.');
     }
     setLoading(false);
@@ -106,26 +184,53 @@ const RolesPermissionsPage = () => {
     setLoading(true);
     setError(null);
     try {
-      if (roleDialogMode === 'add') {
-        if (!permissions.includes('roles-permissions.create')) {
-          setError('You do not have permission to create roles.');
-          setLoading(false);
-          return;
-        }
-        await supabase.from('user_roles').insert([{ name: roleName.trim() }]);
-        setSuccess('Role added.');
-      } else if (roleDialogMode === 'edit' && editingRoleId) {
-        if (!permissions.includes('roles-permissions.edit')) {
-          setError('You do not have permission to edit roles.');
-          setLoading(false);
-          return;
-        }
-        await supabase.from('user_roles').update({ name: roleName.trim() }).eq('id', editingRoleId);
-        setSuccess('Role updated.');
+      // Get the access token for API calls
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError('Authentication required');
+        setLoading(false);
+        return;
       }
+
+      const action = roleDialogMode === 'add' ? 'add_role' : 'update_role';
+      const requestBody: {
+        action: string;
+        name: string;
+        displayName: string;
+        description: string;
+        id?: number;
+      } = {
+        action,
+        name: roleName.trim(),
+        displayName: roleName.trim(), // Use name as display name
+        description: '' // Empty description for now
+      };
+
+      if (roleDialogMode === 'edit' && editingRoleId) {
+        requestBody.id = editingRoleId;
+      }
+
+      const response = await fetch('/api/admin/roles-permissions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to save role');
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(roleDialogMode === 'add' ? 'Role added.' : 'Role updated.');
       await fetchData();
       handleCloseRoleDialog();
     } catch (err) {
+      console.error('Error saving role:', err);
       setError('Failed to save role.');
     }
     setLoading(false);
@@ -138,10 +243,37 @@ const RolesPermissionsPage = () => {
     setLoading(true);
     setError(null);
     try {
-      await supabase.from('user_roles').delete().eq('id', roleId);
+      // Get the access token for API calls
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError('Authentication required');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/admin/roles-permissions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'delete_role',
+          id: roleId
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to delete role');
+        setLoading(false);
+        return;
+      }
+
       setSuccess('Role deleted.');
       await fetchData();
     } catch (err) {
+      console.error('Error deleting role:', err);
       setError('Failed to delete role.');
     }
     setLoading(false);
@@ -164,26 +296,51 @@ const RolesPermissionsPage = () => {
     setLoading(true);
     setError(null);
     try {
-      if (permissionDialogMode === 'add') {
-        if (!permissions.includes('roles-permissions.create')) {
-          setError('You do not have permission to create permissions.');
-          setLoading(false);
-          return;
-        }
-        await supabase.from('permissions').insert([{ name: permissionName.trim() }]);
-        setSuccess('Permission added.');
-      } else if (permissionDialogMode === 'edit' && editingPermissionId) {
-        if (!permissions.includes('roles-permissions.edit')) {
-          setError('You do not have permission to edit permissions.');
-          setLoading(false);
-          return;
-        }
-        await supabase.from('permissions').update({ name: permissionName.trim() }).eq('id', editingPermissionId);
-        setSuccess('Permission updated.');
+      // Get the access token for API calls
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError('Authentication required');
+        setLoading(false);
+        return;
       }
+
+      const action = permissionDialogMode === 'add' ? 'add_permission' : 'update_permission';
+      const requestBody: {
+        action: string;
+        name: string;
+        description: string;
+        id?: number;
+      } = {
+        action,
+        name: permissionName.trim(),
+        description: '' // Empty description for now
+      };
+
+      if (permissionDialogMode === 'edit' && editingPermissionId) {
+        requestBody.id = editingPermissionId;
+      }
+
+      const response = await fetch('/api/admin/roles-permissions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to save permission');
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(permissionDialogMode === 'add' ? 'Permission added.' : 'Permission updated.');
       await fetchData();
       handleClosePermissionDialog();
     } catch (err) {
+      console.error('Error saving permission:', err);
       setError('Failed to save permission.');
     }
     setLoading(false);
@@ -196,10 +353,37 @@ const RolesPermissionsPage = () => {
     setLoading(true);
     setError(null);
     try {
-      await supabase.from('permissions').delete().eq('id', permId);
+      // Get the access token for API calls
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError('Authentication required');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/admin/roles-permissions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'delete_permission',
+          id: permId
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to delete permission');
+        setLoading(false);
+        return;
+      }
+
       setSuccess('Permission deleted.');
       await fetchData();
     } catch (err) {
+      console.error('Error deleting permission:', err);
       setError('Failed to delete permission.');
     }
     setLoading(false);

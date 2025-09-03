@@ -54,11 +54,33 @@ export default function PassphraseManager() {
 
   useEffect(() => {
     const fetchLocations = async () => {
-      const { data, error } = await supabase.from('locations').select('id, store_name, store_id');
-      if (error) {
+      try {
+        // Get the access token for API calls
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          setError('Authentication required');
+          return;
+        }
+
+        const response = await fetch('/api/locations', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          setError(errorData.error || 'Failed to fetch locations');
+          return;
+        }
+
+        const data = await response.json();
+        setLocations(data.locations || []);
+      } catch (error) {
+        console.error('Error fetching locations:', error);
         setError('Failed to fetch locations.');
-      } else {
-        setLocations(data);
       }
     };
     fetchLocations();

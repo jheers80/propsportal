@@ -35,16 +35,35 @@ export default function UserLocationsManager({ selectedUser, locations }: UserLo
   useEffect(() => {
     if (selectedUser) {
       const fetchUserLocations = async () => {
-        const { data, error } = await supabase
-          .from('user_locations')
-          .select('location_id')
-          .eq('user_id', selectedUser.id);
+        try {
+          // Get the access token for API calls
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.access_token) {
+            setError('Authentication required');
+            return;
+          }
 
-        if (error) {
-          setError(error.message);
+          const response = await fetch(`/api/user-locations?userId=${selectedUser.id}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            setError(errorData.error || 'Failed to fetch user locations');
+            setUserLocations([]);
+            return;
+          }
+
+          const data = await response.json();
+          setUserLocations(data.userLocations.map((ul: { location_id: number }) => ul.location_id));
+        } catch (error) {
+          console.error('Error fetching user locations:', error);
+          setError('Failed to fetch user locations');
           setUserLocations([]);
-        } else {
-          setUserLocations(data.map((ul) => ul.location_id));
         }
       };
       fetchUserLocations();
@@ -54,25 +73,42 @@ export default function UserLocationsManager({ selectedUser, locations }: UserLo
   const handleLocationChange = async (locationId: number, checked: boolean) => {
     if (!selectedUser) return;
 
-    if (checked) {
-      const { error } = await supabase
-        .from('user_locations')
-        .insert([{ user_id: selectedUser.id, location_id: locationId }]);
-      if (error) {
-        setError(error.message);
-      } else {
-        setUserLocations((prev) => [...prev, locationId]);
+    try {
+      // Get the access token for API calls
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError('Authentication required');
+        return;
       }
-    } else {
-      const { error } = await supabase
-        .from('user_locations')
-        .delete()
-        .match({ user_id: selectedUser.id, location_id: locationId });
-      if (error) {
-        setError(error.message);
-      } else {
-        setUserLocations((prev) => prev.filter((id) => id !== locationId));
+
+      // Calculate new location IDs
+      const newLocationIds = checked
+        ? [...userLocations, locationId]
+        : userLocations.filter(id => id !== locationId);
+
+      const response = await fetch('/api/user-locations', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          locationIds: newLocationIds,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to update user locations');
+        return;
       }
+
+      setUserLocations(newLocationIds);
+      setError(null);
+    } catch (error) {
+      console.error('Error updating user locations:', error);
+      setError('Failed to update user locations');
     }
   };
 

@@ -1,43 +1,78 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { useUser } from './useUser';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function usePermissions() {
-  const { profile } = useUser();
+  const { profile } = useAuth();
   const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (profile?.role) {
+    if (profile && typeof profile === 'object' && 'permissions' in profile) {
+      // If permissions are already included in the profile from the API
+      const profilePermissions = (profile as { permissions?: string[] }).permissions;
+      if (Array.isArray(profilePermissions)) {
+        setPermissions(profilePermissions);
+        setLoading(false);
+        return;
+      }
+    }
+
+    if (profile && typeof profile === 'object' && 'role' in profile && (profile as { role?: string | number }).role) {
       const fetchPermissions = async () => {
         setLoading(true);
-        let roleId = profile.role;
-        // If role is a string, map to ID (superadmin = 6)
-        if (typeof roleId === 'string') {
-          if (roleId.toLowerCase() === 'superadmin') {
-            roleId = '6';
-          } else {
-            // Optionally, fetch role ID from user_roles table if needed
-            // For now, fallback to '0' (no permissions)
-            roleId = '0';
-          }
+
+        // Get the access token for API calls
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          setPermissions([]);
+          setLoading(false);
+          return;
         }
+
+        // Try to get permissions from the users/me API if not already in profile
+        try {
+          const response = await fetch('/api/users/me', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.permissions && Array.isArray(data.permissions)) {
+              setPermissions(data.permissions);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching permissions from API:', error);
+        }
+
+        // Fallback to direct database query if API fails
         const { data, error } = await supabase
           .from('role_permissions')
-          .select('permissions:permission_id ( name )')
-          .eq('role', roleId);
+          .select(`
+            permission_id,
+            permissions (
+              name
+            )
+          `)
+          .eq('role', (profile as { role?: string | number }).role);
 
         if (error) {
           console.error('Error fetching permissions:', error);
           setPermissions([]);
         } else {
-          // Supabase returns [{ permissions: { name: 'users.view' } }, ...]
           let names: string[] = [];
           if (Array.isArray(data)) {
             names = data
-              .map((p: any) => {
-                if (p.permissions && typeof p.permissions.name === 'string') {
-                  return p.permissions.name;
+              .map((p: { permissions: { name: string }[] }) => {
+                if (p.permissions && p.permissions.length > 0 && typeof p.permissions[0].name === 'string') {
+                  return p.permissions[0].name;
                 }
                 return null;
               })
@@ -51,6 +86,10 @@ export function usePermissions() {
       fetchPermissions();
     } else if (profile) {
       // a profile exists but has no role
+      setPermissions([]);
+      setLoading(false);
+    } else {
+      // no profile
       setPermissions([]);
       setLoading(false);
     }

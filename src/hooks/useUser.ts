@@ -55,33 +55,30 @@ export function useUser() {
         setUser(user);
 
         if (user) {
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-
-          if (profileError) throw profileError;
-          setProfile(profileData);
-
-          const { data: locationsData, error: locationsError } = await supabase
-            .from('locations')
-            .select(
-              `
-              id,
-              store_name,
-              user_locations!inner (
-                user_id
-              )
-            `
-            )
-            .eq('user_locations.user_id', user.id);
-
-          if (locationsError) {
-            console.log('Error fetching locations:', locationsError);
-          } else {
-            setLocations(locationsData || []);
+          // Get the access token for API calls
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session?.access_token) {
+            throw new Error('No access token available');
           }
+
+          // Fetch user data from API
+          const response = await fetch('/api/users/me', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to fetch user data');
+          }
+
+          const data = await response.json();
+
+          setProfile(data.profile);
+          setLocations(data.locations || []);
         }
       } catch (e) {
         setError(e);

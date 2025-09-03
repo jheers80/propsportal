@@ -27,9 +27,21 @@ export default function LoginPage() {
       });
       if (error) {
         setError(error.message);
+        // Log failed login attempt (we'll do this on the server side)
+        await fetch('/api/auth/log-attempt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, success: false }),
+        });
       } else {
-        // Refresh the page to let the middleware handle the redirect
-        router.refresh();
+        // Log successful login attempt
+        await fetch('/api/auth/log-attempt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, success: true }),
+        });
+        // Redirect to portal instead of using router.refresh()
+        router.push('/portal');
       }
   } catch (error: unknown) {
       if (error instanceof Error) {

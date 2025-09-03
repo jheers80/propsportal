@@ -1,9 +1,10 @@
 'use client';
 import { Typography, Box } from '@mui/material';
 import PassphraseManager from '@/components/PassphraseManager';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export default function PassphraseAdminPage() {
-  const { permissions, loading: permissionsLoading } = require('@/hooks/usePermissions').usePermissions();
+  const { permissions, loading: permissionsLoading } = usePermissions();
   if (permissionsLoading) {
     return <Box sx={{ p: 3 }}><Typography>Loading...</Typography></Box>;
   }

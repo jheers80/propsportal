@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { randomInt } from 'crypto';
 import words from 'an-array-of-english-words';
+import { logAuditEvent } from '@/lib/audit';
 
 function pickPassphrase(wordCount = 3) {
   const pool = words.filter((w) => /^[a-z]+$/.test(w) && w.length >= 3 && w.length <= 10);
   const parts: string[] = [];
   for (let i = 0; i < wordCount; i++) {
-    const idx = Math.floor(Math.random() * pool.length);
+    const idx = randomInt(0, pool.length);
     parts.push(pool[idx]);
   }
   return parts.join('-');
@@ -71,6 +73,14 @@ export async function POST(req: NextRequest) {
   if (upsertError) {
     return NextResponse.json({ error: upsertError.message }, { status: 400 });
   }
+
+  // Log audit event
+  await logAuditEvent(req, supabase, {
+    action: 'passphrase.generated',
+    resource_type: 'passphrase',
+    resource_id: locationId.toString(),
+    details: { passphrase, location_id: locationId }
+  }, user.id);
 
   return NextResponse.json({ passphrase });
 }

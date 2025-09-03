@@ -17,7 +17,7 @@ export default function QuickLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
-  const p_role="staff";
+  const p_role = "quickaccess";
 
   const handleLogin = async () => {
     setLoading(true);

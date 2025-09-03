@@ -12,11 +12,30 @@ import {
 import * as MuiIcons from '@mui/icons-material';
 import { Grid } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { useUser } from '@/hooks/useUser';
+import { useAuth } from '@/contexts/AuthContext';
 import CircularProgress from '@mui/material/CircularProgress';
+
+interface UserProfile {
+  id: string;
+  role: string | number;
+  full_name: string;
+  email: string;
+  created_at: string;
+}
+
+interface Feature {
+  id: string;
+  name: string;
+  link: string;
+  icon: string;
+  description: string;
+  roles: string[];
+  new_tab?: boolean;
+}
+
 export default function PortalPage() {
-  const { profile, loading: userLoading } = useUser();
-  const [features, setFeatures] = useState<any[]>([]);
+  const { profile, loading: userLoading } = useAuth();
+  const [features, setFeatures] = useState<Feature[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,8 +55,11 @@ export default function PortalPage() {
   // Helper to check if user has any role required for the feature
   function hasRole(featureRoles: string[]) {
     if (!featureRoles || featureRoles.length === 0) return true;
-    if (!profile?.role) return false;
-    return featureRoles.some(role => role.trim().toLowerCase() === profile.role.trim().toLowerCase());
+    const userProfile = profile as UserProfile | null;
+    if (!userProfile?.role) return false;
+    // Convert role number to string for comparison
+    const userRole = typeof userProfile.role === 'number' ? userProfile.role.toString() : userProfile.role;
+    return featureRoles.some(role => role.trim().toLowerCase() === userRole.trim().toLowerCase());
   }
 
   return (
@@ -58,7 +80,7 @@ export default function PortalPage() {
             </Box>
           ) : (
             <Grid container spacing={4}>
-              {features.map((f) => {
+              {features.filter(f => hasRole(f.roles)).map((f) => {
                   function toPascalCase(str: string) {
                     return str
                       .split('_')

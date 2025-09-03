@@ -37,19 +37,38 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ full_name: fullName })
-      .eq('id', user.id)
-      .select()
-      .single();
+    try {
+      // Get the access token for API calls
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setFeedback({ type: 'error', message: 'Authentication required' });
+        return;
+      }
 
-    if (error) {
-      setFeedback({ type: 'error', message: 'Failed to update profile.' });
-    } else {
-      setProfile(data);
+      const response = await fetch('/api/auth/profile', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          full_name: fullName,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setFeedback({ type: 'error', message: errorData.error || 'Failed to update profile' });
+        return;
+      }
+
+      const data = await response.json();
+      setProfile(data.profile);
       setEditMode(false);
       setFeedback({ type: 'success', message: 'Profile updated successfully.' });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setFeedback({ type: 'error', message: 'An unexpected error occurred' });
     }
   };
 

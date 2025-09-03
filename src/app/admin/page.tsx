@@ -1,12 +1,29 @@
 "use client";
 import { Typography, Card, Container,Box, Grid, CardActionArea} from '@mui/material';
-
+import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import adminRoutes from '../../lib/AdminRoutes';
 
 const AdminPage = () => {
-    const { profile } = require('@/hooks/useUser').useUser();
-    if (!profile || !['superadmin', 'manager', 'multiunit'].includes(profile.role)) {
-      return <Box sx={{ p: 3 }}><Typography variant="h6">Access Denied: Admins only.</Typography></Box>;
+    const { profile } = useAuth();
+    const { permissions, loading: permissionsLoading } = usePermissions();
+
+    if (permissionsLoading) {
+      return <Box sx={{ p: 3 }}><Typography variant="h6">Loading...</Typography></Box>;
+    }
+
+    if (!permissions.includes('users.view') && !permissions.includes('features.view') && !permissions.includes('locations.view')) {
+      // Fallback: check if user is superadmin directly
+      const profileRole = profile && typeof profile === 'object' && 'role' in profile ? (profile as { role: string | number }).role : null;
+      const isSuperAdmin = profileRole === 1 || profileRole === 'superadmin' || profileRole === '1';
+
+      if (!isSuperAdmin) {
+        return <Box sx={{ p: 3 }}>
+          <Typography variant="h6">Access Denied: Admins only.</Typography>
+          <Typography variant="body2">Profile: {JSON.stringify(profile)}</Typography>
+          <Typography variant="body2">Permissions: {JSON.stringify(permissions)}</Typography>
+        </Box>;
+      }
     }
     return (
         <div>

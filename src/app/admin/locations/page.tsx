@@ -21,14 +21,29 @@ export default function LocationsPage() {
 
   useEffect(() => {
     async function fetchData() {
-            const { data:Locations, error:locationsError } = await supabase
-            .from('locations')
-            .select('*');
-      if  (locationsError) {
-      } else {
-        setLocations(Locations);
+      try {
+        // Get the access token for API calls
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          return;
+        }
+
+        const response = await fetch('/api/locations', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setLocations(data.locations || []);
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error);
+      }
     }
-  }
     fetchData();
   }, []);
   if (permissionsLoading) {
