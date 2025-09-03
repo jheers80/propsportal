@@ -163,41 +163,7 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* Roles Overview */}
-      <Container component="section" maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, textAlign: 'center', mb: 4 }}>
-          Roles at a glance
-        </Typography>
-        <Grid container spacing={3}>
-          {[{
-            title: 'User',
-            desc: 'Access to assigned locations for daily tasks. Limited settings.',
-          }, {
-            title: 'Staff',
-            desc: 'Operational staff with access to store-specific tools and data.',
-          }, {
-            title: 'Manager',
-            desc: 'Manage team members and location-level permissions.',
-          }, {
-            title: 'Multiunit',
-            desc: 'Oversee multiple locations with aggregated access.',
-          }, {
-            title: 'Superadmin',
-            desc: 'Full administrative access across the system.',
-          }].map((role) => (
-            <Grid key={role.title} size={{ xs: 12, sm: 6, md: 4 }}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                    {role.title}
-                  </Typography>
-                  <Typography color="text.secondary">{role.desc}</Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
+      
 
       {/* New Here Section */}
       <Box sx={{ backgroundColor: 'background.default', py: { xs: 6, md: 10 } }}>

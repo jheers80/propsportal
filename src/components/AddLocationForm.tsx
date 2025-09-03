@@ -8,6 +8,7 @@ import {
   Button,
   Typography,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 
 type Location = {
@@ -33,6 +34,7 @@ export default function AddLocationForm({ onLocationAdded }: AddLocationFormProp
   });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -42,12 +44,14 @@ export default function AddLocationForm({ onLocationAdded }: AddLocationFormProp
   const handleAddLocation = async () => {
     setError(null);
     setSuccess(null);
+    setLoading(true);
 
     try {
       // Get the access token for API calls
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         setError('Authentication required');
+        setLoading(false);
         return;
       }
 
@@ -70,6 +74,7 @@ export default function AddLocationForm({ onLocationAdded }: AddLocationFormProp
       if (!response.ok) {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to add location');
+        setLoading(false);
         return;
       }
 
@@ -90,9 +95,11 @@ export default function AddLocationForm({ onLocationAdded }: AddLocationFormProp
         state: '',
         zip: '',
       });
+      setLoading(false);
     } catch (error) {
       console.error('Error adding location:', error);
       setError('An unexpected error occurred');
+      setLoading(false);
     }
   };
 
@@ -168,8 +175,9 @@ export default function AddLocationForm({ onLocationAdded }: AddLocationFormProp
           fullWidth
           variant="contained"
           sx={{ mt: 3, mb: 2 }}
+          disabled={loading}
         >
-          Add Location
+          {loading ? <CircularProgress size={24} color="inherit" /> : 'Add Location'}
         </Button>
       </Box>
     </Box>

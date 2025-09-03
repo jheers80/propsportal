@@ -9,6 +9,7 @@ import {
   FormControlLabel,
   Checkbox,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 
 type Profile = {
@@ -31,15 +32,19 @@ interface UserLocationsManagerProps {
 export default function UserLocationsManager({ selectedUser, locations }: UserLocationsManagerProps) {
   const [userLocations, setUserLocations] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (selectedUser) {
       const fetchUserLocations = async () => {
+        setLoading(true);
+        setError(null);
         try {
           // Get the access token for API calls
           const { data: { session } } = await supabase.auth.getSession();
           if (!session?.access_token) {
             setError('Authentication required');
+            setLoading(false);
             return;
           }
 
@@ -55,29 +60,38 @@ export default function UserLocationsManager({ selectedUser, locations }: UserLo
             const errorData = await response.json();
             setError(errorData.error || 'Failed to fetch user locations');
             setUserLocations([]);
+            setLoading(false);
             return;
           }
 
           const data = await response.json();
           setUserLocations(data.userLocations.map((ul: { location_id: number }) => ul.location_id));
+          setLoading(false);
         } catch (error) {
           console.error('Error fetching user locations:', error);
           setError('Failed to fetch user locations');
           setUserLocations([]);
+          setLoading(false);
         }
       };
       fetchUserLocations();
+    } else {
+      setUserLocations([]);
+      setLoading(false);
     }
   }, [selectedUser]);
 
   const handleLocationChange = async (locationId: number, checked: boolean) => {
     if (!selectedUser) return;
 
+    setLoading(true);
+    setError(null);
     try {
       // Get the access token for API calls
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         setError('Authentication required');
+        setLoading(false);
         return;
       }
 
@@ -101,14 +115,17 @@ export default function UserLocationsManager({ selectedUser, locations }: UserLo
       if (!response.ok) {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to update user locations');
+        setLoading(false);
         return;
       }
 
       setUserLocations(newLocationIds);
       setError(null);
+      setLoading(false);
     } catch (error) {
       console.error('Error updating user locations:', error);
       setError('Failed to update user locations');
+      setLoading(false);
     }
   };
 
@@ -120,22 +137,29 @@ export default function UserLocationsManager({ selectedUser, locations }: UserLo
           <Typography component="h1" variant="h5">
             Manage Locations for {selectedUser.email}
           </Typography>
-          <FormGroup>
-            {locations.map((location) => (
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={userLocations.includes(location.id)}
-                    onChange={(e) =>
-                      handleLocationChange(location.id, e.target.checked)
-                    }
-                  />
-                }
-                label={`${location.store_id} - ${location.store_name}`}
-                key={location.id}
-              />
-            ))}
-          </FormGroup>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 100 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <FormGroup>
+              {locations.map((location) => (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={userLocations.includes(location.id)}
+                      onChange={(e) =>
+                        handleLocationChange(location.id, e.target.checked)
+                      }
+                      disabled={loading}
+                    />
+                  }
+                  label={`${location.store_id} - ${location.store_name}`}
+                  key={location.id}
+                />
+              ))}
+            </FormGroup>
+          )}
         </>
       ) : (
         <Typography variant="h6">

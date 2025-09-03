@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import AddLocationForm from '@/components/AddLocationForm';
 import LocationsTable from '@/components/LocationsTable';
@@ -15,6 +16,7 @@ type Location = {
 };
 
 export default function LocationsPage() {
+  const { loading: authLoading } = useAuth();
   const { permissions, loading: permissionsLoading } = usePermissions();
   const [locations, setLocations] = useState<Location[]>([]);
 
@@ -46,7 +48,7 @@ export default function LocationsPage() {
     }
     fetchData();
   }, []);
-  if (permissionsLoading) {
+  if (authLoading || permissionsLoading) {
     return <div style={{ padding: 24 }}><h2>Loading...</h2></div>;
   }
   if (!permissions.includes('locations.view')) {

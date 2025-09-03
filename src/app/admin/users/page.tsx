@@ -28,7 +28,7 @@ type Location = {
 };
 
 export default function AdminUsersPage() {
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const { permissions, loading: permissionsLoading } = usePermissions();
   const [users, setUsers] = useState<AdminProfile[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -92,7 +92,7 @@ export default function AdminUsersPage() {
   }, []);
 
   // Only return after all hooks are called
-  if (permissionsLoading || loading) {
+  if (authLoading || permissionsLoading || loading) {
     return <p>Loading...</p>;
   }
 

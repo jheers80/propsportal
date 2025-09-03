@@ -33,6 +33,7 @@ interface AuditTrail {
 }
 
 export default function AuditTrailsPage() {
+  const { loading: authLoading } = useAuth();
   const { permissions, loading: permissionsLoading } = usePermissions();
   const [auditTrails, setAuditTrails] = useState<AuditTrail[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +80,7 @@ export default function AuditTrailsPage() {
     }
   };
 
-  if (permissionsLoading || loading) {
+  if (authLoading || permissionsLoading || loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
         <CircularProgress />

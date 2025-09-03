@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 
 const RolesPermissionsPage = () => {
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const { permissions, loading: permissionsLoading } = usePermissions();
 
   // Helper function to check if user is superadmin
@@ -400,7 +400,7 @@ const RolesPermissionsPage = () => {
     setLoading(false);
   };
 
-  if (permissionsLoading) {
+  if (authLoading || permissionsLoading) {
     return <Box sx={{ p: 3 }}><Typography>Loading...</Typography></Box>;
   }
   if (!profile || !hasPermission('roles-permissions.view')) {

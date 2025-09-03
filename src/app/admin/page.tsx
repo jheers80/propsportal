@@ -5,10 +5,10 @@ import { usePermissions } from '@/hooks/usePermissions';
 import adminRoutes from '../../lib/AdminRoutes';
 
 const AdminPage = () => {
-    const { profile } = useAuth();
+    const { profile, loading: authLoading } = useAuth();
     const { permissions, loading: permissionsLoading } = usePermissions();
 
-    if (permissionsLoading) {
+    if (authLoading || permissionsLoading) {
       return <Box sx={{ p: 3 }}><Typography variant="h6">Loading...</Typography></Box>;
     }
 

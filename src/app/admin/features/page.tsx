@@ -35,7 +35,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 
 
 export default function FeaturesAdminPage() {
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const { permissions, loading: permissionsLoading } = usePermissions();
   const [features, setFeatures] = useState<Feature[]>([]);
   const [form, setForm] = useState<Feature>(emptyFeature);
@@ -190,7 +190,7 @@ export default function FeaturesAdminPage() {
     setLoading(false);
   }
 
-  if (permissionsLoading) {
+  if (authLoading || permissionsLoading) {
     return <Box sx={{ p: 3 }}><Typography>Loading...</Typography></Box>;
   }
 

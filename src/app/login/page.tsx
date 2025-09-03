@@ -9,6 +9,7 @@ import {
   Button,
   Typography,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 
 export default function LoginPage() {
@@ -16,10 +17,12 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -33,6 +36,7 @@ export default function LoginPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, success: false }),
         });
+        setLoading(false);
       } else {
         // Log successful login attempt
         await fetch('/api/auth/log-attempt', {
@@ -49,6 +53,7 @@ export default function LoginPage() {
       } else {
         setError('Login failed.');
       }
+      setLoading(false);
     }
   };
 
@@ -96,8 +101,9 @@ export default function LoginPage() {
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
+            disabled={loading}
           >
-            Sign In
+            {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
           </Button>
         </Box>
       </Box>

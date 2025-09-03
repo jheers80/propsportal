@@ -2,10 +2,12 @@
 import { Typography, Box } from '@mui/material';
 import PassphraseManager from '@/components/PassphraseManager';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function PassphraseAdminPage() {
+  const { loading: authLoading } = useAuth();
   const { permissions, loading: permissionsLoading } = usePermissions();
-  if (permissionsLoading) {
+  if (authLoading || permissionsLoading) {
     return <Box sx={{ p: 3 }}><Typography>Loading...</Typography></Box>;
   }
   if (!permissions.includes('passphrases.view')) {
