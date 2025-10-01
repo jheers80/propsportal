@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { randomInt } from 'crypto';
-import { generate } from 'random-words';
 import { predicates, objects, teams, collections } from 'friendly-words';
 import { logAuditEvent } from '@/lib/audit';
 
 function pickPassphrase(wordCount = 3) {
   // Option 1: Using random-words (most common words)
-  const randomWordsPassphrase = () => {
-    const words = generate({ 
-      exactly: wordCount, 
-      minLength: 3,
-      maxLength: 8,
-      formatter: (word: string) => word.toLowerCase()
-    });
-    return Array.isArray(words) ? words.join('-') : words;
-  };
+  // legacy random-words helper left intentionally for reference
 
   // Option 2: Using friendly-words (curated for human-friendly combinations)
   const friendlyWordsPassphrase = () => {

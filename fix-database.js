@@ -7,25 +7,26 @@
 
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
+const logger = require('./scripts/cliLogger');
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('❌ Missing environment variables:');
-  console.error('   NEXT_PUBLIC_SUPABASE_URL');
-  console.error('   SUPABASE_SERVICE_ROLE_KEY');
+  logger.error('❌ Missing environment variables:');
+  logger.error('   NEXT_PUBLIC_SUPABASE_URL');
+  logger.error('   SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function applyFixes() {
-  console.log('🔧 Starting database RLS policy fixes...\n');
+  logger.info('🔧 Starting database RLS policy fixes...\n');
 
   try {
-    // Test connection
-    console.log('1. Testing database connection...');
+  // Test connection
+  logger.info('1. Testing database connection...');
     const { data: testData, error: testError } = await supabase
       .from('profiles')
       .select('id')
@@ -34,10 +35,10 @@ async function applyFixes() {
     if (testError) {
       throw new Error(`Database connection failed: ${testError.message}`);
     }
-    console.log('✅ Database connection successful\n');
+    logger.info('✅ Database connection successful\n');
 
     // Update get_my_role function
-    console.log('2. Updating get_my_role() function...');
+  logger.info('2. Updating get_my_role() function...');
     const { error: functionError } = await supabase.rpc('exec_sql', {
       sql: `
         CREATE OR REPLACE FUNCTION get_my_role()
@@ -58,9 +59,9 @@ async function applyFixes() {
     });
 
     if (functionError) {
-      console.warn('⚠️  Could not update function via RPC, you may need to run SQL manually');
-      console.log('Function SQL:');
-      console.log(`
+      logger.warn('⚠️  Could not update function via RPC, you may need to run SQL manually');
+      logger.info('Function SQL:');
+      logger.info(`
 CREATE OR REPLACE FUNCTION get_my_role()
 RETURNS TEXT AS $$
 DECLARE
@@ -77,11 +78,11 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
       `);
     } else {
-      console.log('✅ get_my_role() function updated\n');
+      logger.info('✅ get_my_role() function updated\n');
     }
 
     // Update profiles policies
-    console.log('3. Updating profiles table policies...');
+  logger.info('3. Updating profiles table policies...');
     const { error: profilesError } = await supabase.rpc('exec_sql', {
       sql: `
         DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
@@ -95,9 +96,9 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
     });
 
     if (profilesError) {
-      console.warn('⚠️  Could not update profiles policies via RPC');
-      console.log('Profiles policies SQL:');
-      console.log(`
+      logger.warn('⚠️  Could not update profiles policies via RPC');
+      logger.info('Profiles policies SQL:');
+      logger.info(`
 DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
 CREATE POLICY "Admins can view all profiles" ON public.profiles
   FOR SELECT USING (get_my_role() IN ('superadmin', 'manager'));
@@ -107,11 +108,11 @@ CREATE POLICY "Admins can update profiles" ON public.profiles
   FOR UPDATE USING (get_my_role() IN ('superadmin', 'manager'));
       `);
     } else {
-      console.log('✅ Profiles policies updated\n');
+      logger.info('✅ Profiles policies updated\n');
     }
 
     // Update features policies
-    console.log('4. Updating features table policies...');
+  logger.info('4. Updating features table policies...');
     const { error: featuresError } = await supabase.rpc('exec_sql', {
       sql: `
         DROP POLICY IF EXISTS superadmin_write ON features;
@@ -129,9 +130,9 @@ CREATE POLICY "Admins can update profiles" ON public.profiles
     });
 
     if (featuresError) {
-      console.warn('⚠️  Could not update features policies via RPC');
-      console.log('Features policies SQL:');
-      console.log(`
+      logger.warn('⚠️  Could not update features policies via RPC');
+      logger.info('Features policies SQL:');
+      logger.info(`
 DROP POLICY IF EXISTS superadmin_write ON features;
 DROP POLICY IF EXISTS portal_user_read ON features;
 
@@ -145,18 +146,18 @@ CREATE POLICY portal_user_read ON features
     USING (get_my_role() IN (SELECT unnest(features.roles)));
       `);
     } else {
-      console.log('✅ Features policies updated\n');
+      logger.info('✅ Features policies updated\n');
     }
 
-    console.log('🎉 Database fixes applied successfully!');
-    console.log('\n📋 Summary of changes:');
-    console.log('   • Updated get_my_role() function to prevent infinite recursion');
-    console.log('   • Simplified profiles table RLS policies');
-    console.log('   • Updated features table RLS policies');
-    console.log('\n🔄 Please restart your application to test the fixes.');
+  logger.info('🎉 Database fixes applied successfully!');
+  logger.info('\n📋 Summary of changes:');
+  logger.info('   • Updated get_my_role() function to prevent infinite recursion');
+  logger.info('   • Simplified profiles table RLS policies');
+  logger.info('   • Updated features table RLS policies');
+  logger.info('\n🔄 Please restart your application to test the fixes.');
 
   } catch (error) {
-    console.error('❌ Error applying fixes:', error.message);
+    logger.error('❌ Error applying fixes:', error.message);
     process.exit(1);
   }
 }

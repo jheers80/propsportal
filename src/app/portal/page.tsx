@@ -1,6 +1,6 @@
 'use client';
 import Navbar from '@/components/Navbar';
-import Link from 'next/link';
+// Link import unused
 import {
   Box,
   Card,
@@ -13,7 +13,9 @@ import * as MuiIcons from '@mui/icons-material';
 import { Grid } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { apiGet } from '@/lib/apiPost';
 import CircularProgress from '@mui/material/CircularProgress';
+import logger from '@/lib/logger';
 
 interface UserProfile {
   id: string;
@@ -40,19 +42,18 @@ export default function PortalPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchFeatures() {
+  async function fetchFeatures() {
       setLoading(true);
       try {
-        const { apiGet } = await import('@/lib/apiPost');
-        const json = await apiGet<{ features?: Feature[] }>('/api/features');
-        console.log('Features API response:', json);
-        console.log('Features array length:', json.features?.length || 0);
+    const json = await apiGet<{ features?: Feature[] }>('/api/features');
+          // debug: features fetched (avoid printing payloads in logs)
+          // logger.debug('Features API response length:', json.features?.length || 0);
         if (json.features) {
-          console.log('First feature:', json.features[0]);
+            // logger.debug('First feature:', json.features[0]);
           setFeatures(json.features);
         }
       } catch (err) {
-        console.error('Error fetching features:', err);
+        logger.error('Error fetching features:', err);
       } finally {
         setLoading(false);
       }
@@ -82,7 +83,7 @@ export default function PortalPage() {
     const userRoleName = roleIdToName[userRoleId] || userProfile.role.toString().toLowerCase();
     
     const hasAccess = featureRoles.some(role => role.trim().toLowerCase() === userRoleName.trim().toLowerCase());
-    console.log('Role check:', { userRoleId, userRoleName, featureRoles, hasAccess, profileRole: userProfile.role });
+  // logger.debug('Role check', { userRoleId, userRoleName, featureRoles, hasAccess });
     
     return hasAccess;
   }
@@ -109,15 +110,15 @@ export default function PortalPage() {
                 .filter(f => {
                   // Only filter by role if profile is loaded
                   if (!profile) {
-                    console.log('Profile not loaded yet, showing all features');
+                      // profile not loaded yet; show all features
                     return true; // Show all features if profile not loaded
                   }
                   const hasAccess = hasRole(f.roles);
-                  console.log('Feature filter:', { feature: f.display_name || f.name, roles: f.roles, hasAccess });
+                    // logger.debug('Feature filter:', { feature: f.display_name || f.name, roles: f.roles, hasAccess });
                   return hasAccess;
                 })
                 .map((f) => {
-                  console.log('Rendering feature:', f.display_name || f.name);;
+                  // logger.debug('Rendering feature:', f.display_name || f.name);
                   function toPascalCase(str: string) {
                     return str
                       .split('_')

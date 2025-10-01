@@ -1,13 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { createAdminSupabase } from '@/lib/createAdminSupabase';
+import logger from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false, autoRefreshToken: false } }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -37,7 +34,7 @@ export async function POST(request: NextRequest) {
     if (profileError || !profile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 400 });
     }
-
+    
     let roleName: string | null = null;
     try {
       const { data: roleRec, error: roleErr } = await supabaseAdmin
@@ -46,7 +43,7 @@ export async function POST(request: NextRequest) {
         .eq('id', profile.role)
         .single();
       if (!roleErr && roleRec) roleName = roleRec.name;
-    } catch (e) {
+    } catch {
       // ignore
     }
 
@@ -67,7 +64,7 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       if (ulErr) {
-        console.error('Error checking user_locations:', ulErr);
+        logger.error('Error checking user_locations:', ulErr);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
       }
 
@@ -90,14 +87,14 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (error) {
-      console.error('Error inserting task_list via API:', error);
+      if (error) {
+        logger.error('Error inserting task_list via API:', error);
       return NextResponse.json({ error: error.message || error }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, data });
   } catch (err) {
-    console.error('Error in POST /api/task-lists', err);
+    logger.error('Error in POST /api/task-lists', err); // Changed 'e' to 'err'
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

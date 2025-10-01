@@ -30,19 +30,14 @@ export async function validateQuickAccessSession(
 
     // If no supabase client provided, create one
     if (!supabase) {
-      const response = new Response();
       supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
           cookies: {
             get: (name: string) => req.cookies.get(name)?.value,
-            set: (name: string, value: string, options) => {
-              // We don't need to set cookies in validation
-            },
-            remove: (name: string, options) => {
-              // We don't need to remove cookies in validation
-            },
+            set: () => {},
+            remove: () => {},
           },
         }
       );
@@ -61,7 +56,7 @@ export async function validateQuickAccessSession(
     }
 
     return { valid: true, session };
-  } catch (e) {
+  } catch {
     return { valid: false, error: 'Invalid quick access session format' };
   }
 }

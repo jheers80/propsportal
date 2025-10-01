@@ -1,16 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
+import logger from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST(/* _request: NextRequest */) {
   try {
     // Test database connection
-    const { data: testData, error: testError } = await supabase
+    const { error: testError } = await supabase
       .from('profiles')
       .select('id')
       .limit(1);
 
     if (testError) {
-      console.error('Database connection test failed:', testError);
+      logger.error('Database connection test failed:', testError);
       return NextResponse.json(
         { error: 'Database connection failed', details: testError.message },
         { status: 500 }
@@ -73,7 +74,7 @@ CREATE POLICY portal_user_read ON features
     });
 
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error:', error);
     return NextResponse.json(
       { error: 'Unexpected error occurred', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

@@ -15,15 +15,11 @@ export default function LinkLocationPage() {
     setError(null);
     setMessage(null);
     try {
-  const data = await apiPost<{ success?: boolean; message?: string }>('/api/link-location', { passphrase });
+      await apiPost<{ success?: boolean; message?: string }>('/api/link-location', { passphrase });
       setMessage('Location successfully linked to your account.');
       setPassphrase('');
-  } catch (e: unknown) {
-      if (e instanceof Error) {
-        setError(e.message);
-      } else {
-        setError('Failed to link location.');
-      }
+    } catch {
+      setError('Failed to link location.');
     } finally {
       setLoading(false);
     }

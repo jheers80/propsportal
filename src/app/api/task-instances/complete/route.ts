@@ -1,13 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
+import { createAdminSupabase } from '@/lib/createAdminSupabase';
 import { NextRequest, NextResponse } from 'next/server';
+import logger from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false, autoRefreshToken: false } }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -48,7 +45,9 @@ export async function POST(request: NextRequest) {
         .eq('id', profile.role)
         .single();
       if (!roleErr && roleRec) roleName = roleRec.name;
-    } catch (e) {}
+    } catch {
+      // ignore
+    }
     if (!roleName) {
       if (profile.role === 'superadmin' || profile.role === 1 || profile.role === '1') roleName = 'superadmin';
       else if (typeof profile.role === 'string') roleName = profile.role;
@@ -83,7 +82,7 @@ export async function POST(request: NextRequest) {
       .insert({ task_id: task.id, task_instance_id: instance_id, completed_by: user.id });
 
     if (compErr) {
-      console.error('Error inserting completion:', compErr);
+      logger.error('Error inserting completion:', compErr);
       return NextResponse.json({ error: compErr.message || compErr }, { status: 500 });
     }
 
@@ -100,7 +99,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Error in POST /api/task-instances/complete', err);
+    logger.error('Error in POST /api/task-instances/complete', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

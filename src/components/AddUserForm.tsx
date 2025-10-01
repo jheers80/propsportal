@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { apiPost } from '@/lib/apiPost';
+import logger from '@/lib/logger';
 import {
   Box,
   TextField,
@@ -48,7 +49,7 @@ export default function AddUserForm({ onUserAdded }: AddUserFormProps) {
       setPassword('');
       setFullName('');
     } catch (error) {
-      console.error('Error creating user:', error);
+      logger.error('Error creating user:', error);
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);

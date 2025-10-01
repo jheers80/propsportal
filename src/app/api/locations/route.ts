@@ -1,19 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { createAdminSupabase } from '@/lib/createAdminSupabase';
+import logger from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
     // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     // Get the current user from the session
     const authHeader = request.headers.get('authorization');
@@ -35,13 +27,13 @@ export async function GET(request: NextRequest) {
       .order('store_name');
 
     if (locationsError) {
-      console.error('Error fetching locations:', locationsError);
+      logger.error('Error fetching locations:', locationsError);
       return NextResponse.json({ error: 'Failed to fetch locations' }, { status: 500 });
     }
 
     return NextResponse.json({ locations: locations || [] });
   } catch (error) {
-    console.error('Error in locations API:', error);
+    logger.error('Error in locations API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -49,16 +41,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     // Get the current user from the session to check permissions
     const authHeader = request.headers.get('authorization');
@@ -117,7 +100,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (createError) {
-      console.error('Error creating location:', createError);
+      logger.error('Error creating location:', createError);
       return NextResponse.json({ error: createError.message }, { status: 500 });
     }
 
@@ -139,7 +122,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ location });
   } catch (error) {
-    console.error('Error in location creation API:', error);
+    logger.error('Error in location creation API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

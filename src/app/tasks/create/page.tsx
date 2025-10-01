@@ -6,6 +6,7 @@ import { Container, Paper, Stack, Typography, Button, TextField, Alert, FormCont
 import { useRouter } from 'next/navigation';
 // removed useSearchParams to avoid prerender issues; read params on client instead
 import { apiPost } from '@/lib/apiPost';
+import logger from '@/lib/logger';
 
 export default function CreateTaskPage() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function CreateTaskPage() {
       setLocationId(params.get('location'));
       setTaskListId(params.get('taskList'));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const [title, setTitle] = useState('');
@@ -28,8 +29,8 @@ export default function CreateTaskPage() {
   const [recurrenceType, setRecurrenceType] = useState('once');
   const [recurrenceInterval, setRecurrenceInterval] = useState(1);
   const [recurrenceUnit, setRecurrenceUnit] = useState('days');
-  const [specificDaysOfWeek, setSpecificDaysOfWeek] = useState<number[]>([]);
-  const [specificDaysOfMonth, setSpecificDaysOfMonth] = useState<number[]>([]);
+  const [specificDaysOfWeek] = useState<number[]>([]);
+  const [specificDaysOfMonth] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,7 +69,7 @@ export default function CreateTaskPage() {
       // navigate back to tasks dashboard for the same location/list
       router.push(`/tasks?location=${locationId || ''}&taskList=${taskListId}`);
     } catch (err: any) {
-      console.error('Error creating task', err);
+      logger.error('Error creating task', err);
       setError(err?.message || 'Failed to create task');
     } finally {
       setLoading(false);

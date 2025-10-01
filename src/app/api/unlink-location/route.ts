@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminSupabase } from '@/lib/createAdminSupabase';
+import logger from '@/lib/logger';
 
 export async function DELETE(req: NextRequest) {
   try {
@@ -11,16 +12,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     // Get the current user from the session
     const authHeader = req.headers.get('authorization');
@@ -35,9 +27,9 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Delete the user-location link using admin client to bypass RLS
-    console.log(`🔄 Attempting to unlink user ${user.id} from location ${locationId}`);
-    
+  // Delete the user-location link using admin client to bypass RLS
+    logger.info(`unlink-location: unlinking user ${user.id} from location ${locationId}`);
+
     const { data: deletedData, error, count } = await supabaseAdmin
       .from('user_locations')
       .delete()
@@ -46,22 +38,22 @@ export async function DELETE(req: NextRequest) {
       .select()
       .maybeSingle();
 
-    console.log('🗑️ Delete result:', { deletedData, error, count });
+    logger.info('unlink-location: delete result', { deletedData: !!deletedData, error: error ? error.message || error : null, count });
 
     if (error) {
-      console.error('Error unlinking location:', error);
+      logger.error('Error unlinking location:', error);
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     if (!deletedData) {
-      console.warn('⚠️ No location was unlinked - record may not exist');
+      logger.warn('⚠️ No location was unlinked - record may not exist');
       return NextResponse.json({ error: 'Location link not found' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, message: 'Location unlinked successfully' });
 
   } catch (error) {
-    console.error('Error in unlink-location API:', error);
+    logger.error('Error in unlink-location API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

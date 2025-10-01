@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '../lib/supabaseClient';
+import logger from '@/lib/logger';
 
 /**
  * Checks if user has permission to access task list
@@ -27,7 +28,7 @@ export async function checkTaskListPermission(userId, taskListId) {
 
     return data.role_id === userRole;
   } catch (error) {
-    console.error('Error checking task list permission:', error);
+  logger.error('Error checking task list permission:', error);
     return false;
   }
 }
@@ -38,7 +39,7 @@ export async function checkTaskListPermission(userId, taskListId) {
  * @param {string} userId - User ID
  * @returns {Promise<string>} User role ID
  */
-export async function getUserRole(userId) {
+export async function getUserRole(/* userId */) {
   try {
     // This is a placeholder - integrate with your existing auth system
     // For now, we'll assume a default role or get it from user metadata
@@ -50,7 +51,7 @@ export async function getUserRole(userId) {
     // This depends on how your auth system stores roles
     return user.user_metadata?.role || 'default';
   } catch (error) {
-    console.error('Error getting user role:', error);
+  logger.error('Error getting user role:', error);
     return null;
   }
 }
@@ -67,7 +68,7 @@ export async function setUserRole(roleId) {
 
     return { success: true };
   } catch (error) {
-    console.error('Error setting user role:', error);
+  logger.error('Error setting user role:', error);
     return { success: false, error };
   }
 }

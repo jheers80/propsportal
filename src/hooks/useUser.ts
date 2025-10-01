@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { apiPost, apiGet } from '@/lib/apiPost';
+import logger from '@/lib/logger';
+import { apiGet } from '@/lib/apiPost';
 import type { User } from '@supabase/supabase-js';
 
 interface Profile {
@@ -34,7 +35,7 @@ export function useUser() {
           if (match) {
             try {
               quickSession = JSON.parse(decodeURIComponent(match[1]));
-            } catch (e) {
+            } catch {
               quickSession = null;
             }
           }
@@ -66,13 +67,13 @@ export function useUser() {
               // attach to window with a typed property
               (window as unknown as { __USER_PROFILE__?: Profile }).__USER_PROFILE__ = data.profile;
             }
-          } catch (e) {
+          } catch {
             // ignore
           }
         }
       } catch (e) {
-        setError(e);
-      } finally {
+          setError(e);
+        } finally {
         setLoading(false);
       }
     };
@@ -84,7 +85,7 @@ export function useUser() {
   const data = await apiGet<{ profile: Profile; locations?: Location[] }>('/api/users/me');
       setLocations(data.locations || []);
     } catch (e) {
-      console.error('Error refreshing locations:', e);
+      logger.error('Error refreshing locations:', e);
     }
   };
 

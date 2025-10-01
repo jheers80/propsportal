@@ -1,21 +1,13 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { createAdminSupabase } from '@/lib/createAdminSupabase';
+import logger from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Starting user creation API');
+  // user creation API invoked
     // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
-    console.log('Supabase admin client created');
+    const supabaseAdmin = createAdminSupabase();
+  // Supabase admin client created
 
     // Get the current user from the session to check permissions
     const authHeader = request.headers.get('authorization');
@@ -24,14 +16,14 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    console.log('Token extracted:', token ? 'present' : 'missing');
+  // token extracted
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
     if (authError || !user) {
-      console.log('Auth error:', authError);
+  logger.error('Auth error:', authError);
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
-    console.log('User authenticated:', user.id);
+    // user authenticated
 
     // Check if current user has permission to create users
     const { data: profile, error: profileError } = await supabaseAdmin
@@ -41,10 +33,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profileError) {
-      console.log('Profile error:', profileError);
+  logger.error('Profile error:', profileError);
       return NextResponse.json({ error: 'Failed to verify permissions' }, { status: 500 });
     }
-    console.log('Profile found, role:', profile.role);
+    // profile found
 
     // Check if user has admin role
     const { data: userRole, error: roleError } = await supabaseAdmin
@@ -54,21 +46,21 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (roleError || !['superadmin', 'manager'].includes(userRole?.name)) {
-      console.log('Role error:', roleError, 'Role name:', userRole?.name);
+  logger.error('Role or permission error:', roleError, 'Role name:', userRole?.name);
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
-    console.log('Role check passed:', userRole?.name);
+    // role check passed
 
     const body = await request.json();
     const { email, password, full_name: fullName } = body;
-    console.log('Request body:', { email, password: password ? 'present' : 'missing', fullName });
+  // request body parsed (email/presence not logged for privacy)
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
     // Create the user
-    console.log('Creating user with email:', email);
+  // creating user
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -79,10 +71,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (createError) {
-      console.error('Error creating user:', createError);
+  logger.error('Error creating user:', createError);
       return NextResponse.json({ error: createError.message }, { status: 500 });
     }
-    console.log('User created:', newUser.user.id);
+    // user created
 
     // Create profile for the new user
     const { data: newProfile, error: profileCreateError } = await supabaseAdmin
@@ -96,10 +88,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profileCreateError) {
-      console.error('Error creating profile:', profileCreateError);
+  logger.error('Error creating profile:', profileCreateError);
       // Don't fail the request if profile creation fails, but log it
     } else {
-      console.log('Profile created');
+      // profile created
     }
 
     // Log the user creation
@@ -118,13 +110,13 @@ export async function POST(request: NextRequest) {
             created_user_name: fullName
           }
         });
-      console.log('Audit logged');
+  // audit logged
     } catch (auditError) {
-      console.error('Error logging audit trail:', auditError);
+  logger.error('Error logging audit trail:', auditError);
       // Don't fail the request if audit logging fails
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       user: {
         id: newUser.user.id,
         email: newUser.user.email,
@@ -132,9 +124,10 @@ export async function POST(request: NextRequest) {
       },
       profile: newProfile
     });
-    console.log('API response sent');
+    // API response sent
+    return response;
   } catch (error) {
-    console.error('Error in user creation API:', error);
+  logger.error('Error in user creation API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

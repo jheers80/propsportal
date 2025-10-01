@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextRequest } from 'next/server';
+import logger from './logger';
 
 export interface AuditEvent {
   action: string;
@@ -63,10 +64,11 @@ export async function logAuditEvent(
       });
 
     if (error) {
-      console.error('Error logging audit event:', error);
+      // use centralized logger
+      logger.error('Error logging audit event:', error);
     }
   } catch (error) {
-    console.error('Error in logAuditEvent:', error);
+    logger.error('Error in logAuditEvent:', error);
   }
 }
 

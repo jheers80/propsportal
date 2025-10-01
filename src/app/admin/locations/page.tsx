@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiGet } from '@/lib/apiPost';
+import logger from '@/lib/logger';
 import AddLocationForm from '@/components/AddLocationForm';
 import LocationsTable from '@/components/LocationsTable';
 
@@ -24,10 +25,10 @@ export default function LocationsPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-  const data = await apiGet<{ locations?: Location[] }>('/api/locations');
-  setLocations(data.locations || []);
+          const data = await apiGet<{ locations?: Location[] }>('/api/locations');
+          setLocations(data.locations || []);
       } catch (error) {
-        console.error('Error fetching locations:', error);
+          logger.error('Error fetching locations:', error);
       }
     }
     fetchData();

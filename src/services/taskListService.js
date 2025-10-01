@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '../lib/supabaseClient';
+import logger from '../lib/logger';
 
 /**
  * Creates a new task list
@@ -22,7 +23,7 @@ export async function createTaskList(taskListData) {
 
     return { success: true, data };
   } catch (error) {
-    console.error('Error creating task list:', error);
+    logger.error('Error creating task list:', error);
 
     // Some deployments / older schemas may not have optional columns (e.g., description)
     // Supabase/Postgres can return errors like "Could not find the 'description' column"
@@ -49,7 +50,7 @@ export async function createTaskList(taskListData) {
         return { success: true, data: data2 };
       }
     } catch (e2) {
-      console.error('Retry without missing column failed:', e2);
+      logger.error('Retry without missing column failed:', e2);
       return { success: false, error: e2 };
     }
 
@@ -102,7 +103,7 @@ export async function fetchTaskLists(locationId = null) {
 
     return { success: true, data };
   } catch (error) {
-    console.error('Error fetching task lists:', error);
+    logger.error('Error fetching task lists:', error);
     return { success: false, error };
   }
 }
@@ -126,7 +127,7 @@ export async function updateTaskList(taskListId, updates) {
 
     return { success: true, data };
   } catch (error) {
-    console.error('Error updating task list:', error);
+    logger.error('Error updating task list:', error);
     return { success: false, error };
   }
 }
@@ -147,7 +148,7 @@ export async function deleteTaskList(taskListId) {
 
     return { success: true };
   } catch (error) {
-    console.error('Error deleting task list:', error);
+    logger.error('Error deleting task list:', error);
     return { success: false, error };
   }
 }
@@ -169,7 +170,7 @@ export async function fetchTaskList(taskListId) {
 
     return { success: true, data };
   } catch (error) {
-    console.error('Error fetching task list:', error);
+    logger.error('Error fetching task list:', error);
     return { success: false, error };
   }
 }

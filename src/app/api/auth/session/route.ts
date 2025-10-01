@@ -1,19 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
+import { createAdminSupabase } from '@/lib/createAdminSupabase';
 import { NextRequest, NextResponse } from 'next/server';
+import logger from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
     // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     // Get the current user from the session
     const authHeader = request.headers.get('authorization');
@@ -37,7 +29,7 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Error in session API:', error);
+    logger.error('Error in session API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -45,16 +37,7 @@ export async function GET(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     // Get the current user from the session
     const authHeader = request.headers.get('authorization');
@@ -62,17 +45,17 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { error: signOutError } = await supabaseAdmin.auth.signOut();
+  // no token required for sign out with admin client here
+  const { error: signOutError } = await supabaseAdmin.auth.signOut();
 
     if (signOutError) {
-      console.error('Error signing out:', signOutError);
+      logger.error('Error signing out:', signOutError);
       return NextResponse.json({ error: 'Failed to sign out' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error in sign out API:', error);
+    logger.error('Error in sign out API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

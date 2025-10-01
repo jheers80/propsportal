@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { apiPost, apiGet } from '@/lib/apiPost';
+import logger from '@/lib/logger';
 import {
   Box,
   Typography,
@@ -45,18 +46,18 @@ export default function UserLocationsManager({ selectedUser, locations }: UserLo
               const data = await apiGet<{ userLocations: Array<{ location_id: number }> }>(`/api/user-locations?userId=${selectedUser.id}`);
               setUserLocations(data.userLocations.map((ul) => ul.location_id));
             } catch (e) {
-            console.error('Error fetching user locations:', e);
+            logger.error('Error fetching user locations:', e);
             setError('Failed to fetch user locations');
             setUserLocations([]);
           } finally {
             setLoading(false);
           }
         } catch (error) {
-          console.error('Error fetching user locations:', error);
-          setError('Failed to fetch user locations');
-          setUserLocations([]);
-          setLoading(false);
-        }
+            logger.error('Error fetching user locations:', error);
+            setError('Failed to fetch user locations');
+            setUserLocations([]);
+            setLoading(false);
+          }
       };
       fetchUserLocations();
     } else {
@@ -82,13 +83,13 @@ export default function UserLocationsManager({ selectedUser, locations }: UserLo
         setUserLocations(newLocationIds);
         setError(null);
       } catch (e) {
-        console.error('Error updating user locations:', e);
+        logger.error('Error updating user locations:', e);
         setError('Failed to update user locations');
       } finally {
         setLoading(false);
       }
     } catch (error) {
-      console.error('Error updating user locations:', error);
+      logger.error('Error updating user locations:', error);
       setError('Failed to update user locations');
       setLoading(false);
     }

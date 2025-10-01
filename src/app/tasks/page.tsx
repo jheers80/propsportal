@@ -31,7 +31,9 @@ import {
 } from '@mui/material';
 import { Assignment, LocationOn, ListAlt } from '@mui/icons-material';
 import { fetchTaskLists } from '@/services/taskListService';
+import * as taskService from '@/services/taskService';
 import { apiPost } from '@/lib/apiPost';
+import logger from '@/lib/logger';
 import type { SelectChangeEvent } from '@mui/material';
 
 // Types for tasks UI
@@ -42,14 +44,17 @@ type Task = { id: number | string; title?: string; name?: string; description?: 
 
 const TasksPage = () => {
   const router = useRouter();
-  const { user, profile, locations, loading: userLoading, refreshLocations } = useUser();
+  const { user, /* profile, */ locations, loading: userLoading, refreshLocations } = useUser();
 
   const [selectedLocation, setSelectedLocation] = useState<number | ''>('');
   const [taskLists, setTaskLists] = useState<TaskList[]>([]);
   const [selectedTaskList, setSelectedTaskList] = useState<string | ''>('');
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [hideCompleted, setHideCompleted] = useState(false);
-  const [upcomingOnly, setUpcomingOnly] = useState(false);
+  // intentionally not using setters yet
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [hideCompleted, _setHideCompleted] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [upcomingOnly, _setUpcomingOnly] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -73,7 +78,7 @@ const TasksPage = () => {
       }
       // if multiple locations, require explicit selection (leave as '')
     }
-  }, [userLoading, locations]);
+  }, [userLoading, locations, step]);
 
   // Load task lists when a location is selected
   useEffect(() => {
@@ -104,7 +109,7 @@ const TasksPage = () => {
           setStep('viewTasks');
         }
       } catch (e: any) {
-        console.error('Error loading task lists', e);
+        logger.error('Error loading task lists', e);
         if (mounted) setError('Unable to load task lists');
       } finally {
         if (mounted) setLoading(false);
@@ -112,7 +117,7 @@ const TasksPage = () => {
     };
     loadTaskLists();
     return () => { mounted = false; };
-  }, [selectedLocation]);
+  }, [selectedLocation, step]);
 
   // Load tasks when selectedTaskList changes
   useEffect(() => {
@@ -122,13 +127,12 @@ const TasksPage = () => {
       setLoading(true);
       setError(null);
       try {
-  const svc = await import('@/services/taskService');
-  const res = await svc.fetchAllTasksInList(selectedTaskList as string) as unknown;
+  const res = await taskService.fetchAllTasksInList(selectedTaskList as string) as unknown;
   const list = (res as { data?: Task[] } )?.data || [];
         if (!mounted) return;
         setTasks(list || []);
       } catch (e) {
-        console.error('Error loading tasks', e);
+        logger.error('Error loading tasks', e);
         if (mounted) setError('Unable to load tasks');
       } finally {
         if (mounted) setLoading(false);
@@ -319,8 +323,7 @@ const TasksPage = () => {
                                     try {
                                       await apiPost('/api/task-instances/complete', { instance_id: inst.id });
                                       // refresh tasks
-                                      const svc = await import('@/services/taskService');
-                                      const refreshed = await svc.fetchAllTasksInList(selectedTaskList as string) as { data?: Task[] };
+                                      const refreshed = await taskService.fetchAllTasksInList(selectedTaskList as string) as { data?: Task[] };
                                       setTasks(refreshed?.data || []);
                                       setSnackbarMessage('Task completed'); setSnackbarSeverity('success'); setSnackbarOpen(true);
                                     } catch (err) {
@@ -336,10 +339,9 @@ const TasksPage = () => {
                                       const comp = inst.task_completions?.[0];
                                       if (!inst?.id || !comp?.id) return;
                                       setLoading(true);
-                                      try {
+                                        try {
                                         await apiPost('/api/task-instances/uncomplete', { instance_id: inst.id, completion_id: comp.id });
-                                        const svc = await import('@/services/taskService');
-                                        const refreshed = await svc.fetchAllTasksInList(selectedTaskList as string) as { data?: Task[] };
+                                        const refreshed = await taskService.fetchAllTasksInList(selectedTaskList as string) as { data?: Task[] };
                                         setTasks(refreshed?.data || []);
                                         setSnackbarMessage('Completion removed'); setSnackbarSeverity('success'); setSnackbarOpen(true);
                                       } catch (err) {
@@ -420,7 +422,7 @@ const TasksPage = () => {
                       setNewListName('');
                       setNewListDesc('');
                     } catch (e: any) {
-                      console.error('Error creating task list', e);
+                      logger.error('Error creating task list', e);
                       const msg = e?.message || 'Failed to create task list';
                       setCreateError(msg);
                       setSnackbarMessage(msg);

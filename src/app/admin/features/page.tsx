@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { TextField, Button, Select, MenuItem, Checkbox, ListItemText, FormControl, InputLabel, OutlinedInput, Typography, Box, Switch } from '@mui/material';
 import { apiPost, apiGet } from '@/lib/apiPost';
+import logger from '@/lib/logger';
 import { materialIcons } from '@/lib/materialIcons';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -53,7 +54,7 @@ export default function FeaturesAdminPage() {
       const data = await apiGet<{ roles?: UserRole[] }>('/api/admin/features');
       setRolesList(data.roles || []);
     } catch (error) {
-      console.error('Error fetching roles:', error);
+      logger.error('Error fetching roles:', error);
     }
   }
 
@@ -63,7 +64,7 @@ export default function FeaturesAdminPage() {
       const data = await apiGet<{ features?: Feature[] }>('/api/admin/features');
       setFeatures(data.features || []);
     } catch (err) {
-      console.error('Error fetching features:', err);
+      logger.error('Error fetching features:', err);
     }
     setLoading(false);
   }
@@ -82,7 +83,7 @@ export default function FeaturesAdminPage() {
       setEditingId(null);
       await fetchFeatures();
     } catch (error) {
-      console.error('Error submitting feature:', error);
+      logger.error('Error submitting feature:', error);
     }
     setLoading(false);
   }
@@ -99,7 +100,7 @@ export default function FeaturesAdminPage() {
       await apiPost('/api/admin/features', { action: 'delete', id });
       await fetchFeatures();
     } catch (error) {
-      console.error('Error deleting feature:', error);
+      logger.error('Error deleting feature:', error);
     }
     setLoading(false);
   }

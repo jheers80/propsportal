@@ -10,6 +10,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
+import logger from '@/lib/logger';
 
 type Location = {
   id: number;
@@ -73,7 +74,7 @@ export default function AddLocationForm({ onLocationAdded }: AddLocationFormProp
       });
       setLoading(false);
     } catch (error) {
-      console.error('Error adding location:', error);
+      logger.error('Error adding location:', error);
       setError('An unexpected error occurred');
       setLoading(false);
     }

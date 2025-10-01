@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '../lib/supabaseClient';
+import logger from '../lib/logger';
 import { generateNextInstance } from './recurrenceEngine';
 
 /**
@@ -59,7 +60,7 @@ export async function completeTask(instanceId, userId, notes = null) {
 
     return { success: true };
   } catch (error) {
-    console.error('Error completing task:', error);
+    logger.error('Error completing task:', error);
     return { success: false, error };
   }
 }
@@ -94,7 +95,7 @@ export async function replaceTaskInstance(taskId, newDueDate) {
 
     return { success: true };
   } catch (error) {
-    console.error('Error replacing task instance:', error);
+    logger.error('Error replacing task instance:', error);
     return { success: false, error };
   }
 }
@@ -137,7 +138,7 @@ export async function createTask(taskData) {
 
     return { success: true, data: task };
   } catch (error) {
-    console.error('Error creating task:', error);
+    logger.error('Error creating task:', error);
     return { success: false, error };
   }
 }
@@ -164,7 +165,7 @@ export async function fetchTasksWithInstances(taskListId) {
 
     return { success: true, data };
   } catch (error) {
-    console.error('Error fetching tasks:', error);
+    logger.error('Error fetching tasks:', error);
     return { success: false, error };
   }
 }
@@ -191,7 +192,7 @@ export async function fetchCompletionHistory(taskId, limit = 50) {
 
     return { success: true, data };
   } catch (error) {
-    console.error('Error fetching completion history:', error);
+    logger.error('Error fetching completion history:', error);
     return { success: false, error };
   }
 }
@@ -215,7 +216,7 @@ export async function updateTask(taskId, updates) {
 
     return { success: true, data };
   } catch (error) {
-    console.error('Error updating task:', error);
+    logger.error('Error updating task:', error);
     return { success: false, error };
   }
 }
@@ -236,7 +237,7 @@ export async function deleteTask(taskId) {
 
     return { success: true };
   } catch (error) {
-    console.error('Error deleting task:', error);
+    logger.error('Error deleting task:', error);
     return { success: false, error };
   }
 }
@@ -260,7 +261,7 @@ export async function fetchAllTasksInList(taskListId) {
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error('Error fetching all tasks:', error);
+    logger.error('Error fetching all tasks:', error);
     return { success: false, error };
   }
 }

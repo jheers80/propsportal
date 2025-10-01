@@ -1,19 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { createAdminSupabase } from '@/lib/createAdminSupabase';
+import logger from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
     // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     // Get the current user from the session
     const authHeader = request.headers.get('authorization');
@@ -78,13 +70,13 @@ export async function GET(request: NextRequest) {
       .eq('user_id', userId);
 
     if (userLocationsError) {
-      console.error('Error fetching user locations:', userLocationsError);
+      logger.error('Error fetching user locations:', userLocationsError);
       return NextResponse.json({ error: 'Failed to fetch user locations' }, { status: 500 });
     }
 
     return NextResponse.json({ userLocations: userLocations || [] });
   } catch (error) {
-    console.error('Error in user locations API:', error);
+    logger.error('Error in user locations API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -92,16 +84,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     // Get the current user from the session to check permissions
     const authHeader = request.headers.get('authorization');
@@ -152,7 +135,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', userId);
 
     if (deleteError) {
-      console.error('Error removing existing user locations:', deleteError);
+      logger.error('Error removing existing user locations:', deleteError);
       return NextResponse.json({ error: 'Failed to update user locations' }, { status: 500 });
     }
 
@@ -168,7 +151,7 @@ export async function POST(request: NextRequest) {
         .insert(userLocationInserts);
 
       if (insertError) {
-        console.error('Error adding user locations:', insertError);
+        logger.error('Error adding user locations:', insertError);
         return NextResponse.json({ error: 'Failed to update user locations' }, { status: 500 });
       }
     }
@@ -190,7 +173,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error in user locations update API:', error);
+    logger.error('Error in user locations update API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

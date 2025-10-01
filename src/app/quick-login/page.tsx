@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/apiPost';
 
 export default function QuickLoginPage() {
-  const [p_passphrase, setp_Passphrase] = useState('');
+  const [p_passphrase, setP_Passphrase] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -26,10 +26,10 @@ export default function QuickLoginPage() {
     setSuccess(null);
 
     try {
-  const data = await apiPost<{ success?: boolean; message?: string }>('/api/quick-login', { p_passphrase, p_role });
-      setSuccess('Quick access granted for 1 hour.');
+      await apiPost<{ success?: boolean; message?: string }>('/api/quick-login', { p_passphrase, p_role });
+  setSuccess('Quick access granted for 1 hour.');
       // Optional: redirect to a store-specific page or dashboard
-      router.push('/portal/');
+  router.push('/portal/');
   } catch (e: unknown) {
       if (e instanceof Error) {
         setError(e.message);
@@ -64,7 +64,7 @@ export default function QuickLoginPage() {
             name="p_passphrase"
             autoFocus
             value={p_passphrase}
-            onChange={(e) => setp_Passphrase(e.target.value)}
+            onChange={(e) => setP_Passphrase(e.target.value)}
           />
           <Button
             type="submit"

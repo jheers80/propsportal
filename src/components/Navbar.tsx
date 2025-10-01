@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import Link from 'next/link';
 import { apiPost } from '@/lib/apiPost';
+import logger from '@/lib/logger';
 
 export default function Navbar() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -36,12 +37,12 @@ export default function Navbar() {
     try {
       await apiPost('/api/logout');
     } catch (e) {
-      console.error('Logout API failed', e);
+      logger.error('Logout API failed', e);
     }
     try {
       await (signOut as () => Promise<void>)();
     } catch (e) {
-      console.error('SignOut failed', e);
+      logger.error('SignOut failed', e);
     }
     handleClose();
     router.replace('/');

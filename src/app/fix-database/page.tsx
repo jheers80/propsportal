@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { apiPost } from '@/lib/apiPost';
 
 export default function FixDatabase() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -18,7 +19,6 @@ export default function FixDatabase() {
 
     try {
       try {
-        const { apiPost } = await import('@/lib/apiPost');
         const data = await apiPost<{
           sql_commands?: Array<{
             title: string;

@@ -1,19 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { createAdminSupabase } from '@/lib/createAdminSupabase';
+import logger from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
     // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     // Get the current user from the session
     const authHeader = request.headers.get('authorization');
@@ -40,7 +32,7 @@ export async function GET(request: NextRequest) {
 
     // If profile doesn't exist, create a default one
     if (profileError && profileError.code === 'PGRST116') {
-      console.log('Profile not found, creating default profile for user:', user.id);
+      // profile missing - creating default profile
       const { data: newProfile, error: createError } = await supabaseAdmin
         .from('profiles')
         .insert({
@@ -53,13 +45,13 @@ export async function GET(request: NextRequest) {
         .single();
 
       if (createError) {
-        console.error('Error creating profile:', createError);
+    logger.error('Error creating profile:', createError);
         return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 });
       }
 
       profile = newProfile;
     } else if (profileError) {
-      console.error('Error fetching profile:', profileError);
+  logger.error('Error fetching profile:', profileError);
       return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
     }
 
@@ -69,23 +61,14 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ profile });
   } catch (error) {
-    console.error('Error in profile API:', error);
+  logger.error('Error in profile API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     // Get the current user from the session
     const authHeader = request.headers.get('authorization');
@@ -111,7 +94,7 @@ export async function POST(request: NextRequest) {
       try {
         body = JSON.parse(raw);
       } catch (e) {
-        console.warn('Invalid JSON in profile POST', e);
+  logger.warn('Invalid JSON in profile POST', e);
         return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
       }
     }
@@ -127,7 +110,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (existing.error) {
-        console.error('Error fetching existing profile during no-op POST:', existing.error);
+  logger.error('Error fetching existing profile during no-op POST:', existing.error);
         return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
       }
 
@@ -147,13 +130,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profileError) {
-      console.error('Error updating profile:', profileError);
+  logger.error('Error updating profile:', profileError);
       return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
     }
 
     return NextResponse.json({ profile });
   } catch (error) {
-    console.error('Error in profile update API:', error);
+  logger.error('Error in profile update API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

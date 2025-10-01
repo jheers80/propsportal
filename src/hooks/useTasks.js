@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchTasksWithInstances, createTask, updateTask, deleteTask } from '../services/taskService';
 
 /**
@@ -16,12 +16,12 @@ export function useTasks(taskListId) {
     if (taskListId) {
       fetchTasks();
     }
-  }, [taskListId]);
+  }, [taskListId, fetchTasks]);
 
   /**
    * Fetches tasks from the database
    */
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -34,7 +34,7 @@ export function useTasks(taskListId) {
     }
 
     setLoading(false);
-  };
+  }, [taskListId]);
 
   /**
    * Creates a new task

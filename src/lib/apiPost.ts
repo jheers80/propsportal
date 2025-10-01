@@ -4,7 +4,7 @@ async function attachAuth(headers: Record<string, string> = {}) {
   try {
     const token = await getSessionToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
-  } catch (_err) {
+  } catch {
     // ignore token retrieval errors — requests may still work if unauthenticated
   }
   return headers;
@@ -16,7 +16,7 @@ export type Json = string | number | boolean | null | Json[] | { [key: string]: 
 async function parseJsonSafe(resp: Response): Promise<unknown> {
   try {
     return await resp.json();
-  } catch (_e) {
+  } catch {
     return null;
   }
 }

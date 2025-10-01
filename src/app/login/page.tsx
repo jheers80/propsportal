@@ -11,6 +11,8 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
+import logger from '@/lib/logger';
+import { apiPost } from '@/lib/apiPost';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,12 +32,12 @@ export default function LoginPage() {
       });
       if (error) {
         setError(error.message);
-        // Log failed login attempt (we'll do this on the server side)
-        try { await (await import('@/lib/apiPost')).apiPost('/api/auth/log-attempt', { email, success: false }); } catch (e) { console.error('Failed to log attempt', e); }
+    // Log failed login attempt (we'll do this on the server side)
+  try { await apiPost('/api/auth/log-attempt', { email, success: false }); } catch (e) { logger.error('Failed to log attempt', e); }
         setLoading(false);
       } else {
-        // Log successful login attempt
-        try { await (await import('@/lib/apiPost')).apiPost('/api/auth/log-attempt', { email, success: true }); } catch (e) { console.error('Failed to log attempt', e); }
+    // Log successful login attempt
+  try { await apiPost('/api/auth/log-attempt', { email, success: true }); } catch (e) { logger.error('Failed to log attempt', e); }
         // Redirect to portal instead of using router.refresh()
         router.push('/portal');
       }

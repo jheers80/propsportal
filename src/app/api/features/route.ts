@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { validateQuickAccessSession } from '@/lib/sessionValidation';
+import logger from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   const response = NextResponse.next();
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
       .contains('roles', ['quickaccess']);
 
     if (error) {
-      console.error('Supabase error:', error);
+      logger.error('Supabase error:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -60,7 +61,7 @@ export async function GET(req: NextRequest) {
     .select('*');
 
   if (error) {
-    console.error('Supabase error:', error);
+    logger.error('Supabase error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

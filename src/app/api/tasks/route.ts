@@ -1,13 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
+import { createAdminSupabase } from '@/lib/createAdminSupabase';
 import { NextRequest, NextResponse } from 'next/server';
+import logger from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false, autoRefreshToken: false } }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -48,7 +45,9 @@ export async function POST(request: NextRequest) {
         .eq('id', profile.role)
         .single();
       if (!roleErr && roleRec) roleName = roleRec.name;
-    } catch (e) {}
+    } catch {
+      // ignore
+    }
     if (!roleName) {
       if (profile.role === 'superadmin' || profile.role === 1 || profile.role === '1') roleName = 'superadmin';
       else if (typeof profile.role === 'string') roleName = profile.role;
@@ -60,13 +59,17 @@ export async function POST(request: NextRequest) {
     if (roleName === 'superadmin') allowed = true;
     if (!allowed && tl.role_id && roleName && tl.role_id === roleName) allowed = true;
     if (!allowed && tl.location_id) {
-      const { data: userLocs, error: ulErr } = await supabaseAdmin
+      const resp = await supabaseAdmin
         .from('user_locations')
         .select('location_id')
         .eq('user_id', user.id)
         .eq('location_id', tl.location_id)
         .limit(1);
-      if (userLocs && userLocs.length > 0) allowed = true;
+          if (resp.error) {
+            logger.error('Error checking user_locations:', resp.error);
+            return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+          }
+      if (resp.data && resp.data.length > 0) allowed = true;
     }
 
     if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -87,28 +90,28 @@ export async function POST(request: NextRequest) {
       created_by: user.id
     };
 
-    const { data: created, error: createErr } = await supabaseAdmin
+      const { data: created, error: createErr } = await supabaseAdmin
       .from('tasks')
       .insert(taskPayload)
       .select()
       .single();
 
-    if (createErr) {
-      console.error('Error creating task via API:', createErr);
-      return NextResponse.json({ error: createErr.message || createErr }, { status: 500 });
-    }
+      if (createErr) {
+        logger.error('Error creating task via API:', createErr);
+        return NextResponse.json({ error: createErr.message || createErr }, { status: 500 });
+      }
 
     // If due_date present, create initial instance
     if (created && created.due_date) {
       const { error: instErr } = await supabaseAdmin
         .from('task_instances')
         .insert({ task_id: created.id, due_date: created.due_date, status: 'pending' });
-      if (instErr) console.error('Error creating initial instance:', instErr);
+  if (instErr) logger.error('Error creating initial instance:', instErr);
     }
 
     return NextResponse.json({ success: true, data: created });
   } catch (err) {
-    console.error('Error in POST /api/tasks', err);
+  logger.error('Error in POST /api/tasks', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

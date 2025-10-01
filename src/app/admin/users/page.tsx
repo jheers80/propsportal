@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { apiGet } from '@/lib/apiPost';
+import logger from '@/lib/logger';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import {
@@ -12,7 +13,7 @@ import {
 } from '@mui/material';
 import AddUserForm from '@/components/AddUserForm';
 import UsersList from '@/components/UsersList';
-{/* import UserLocationsManager from '@/components/UserLocationsManager';*/}
+// import UserLocationsManager from '@/components/UserLocationsManager';
 
 type AdminProfile = {
   id: string;
@@ -22,11 +23,7 @@ type AdminProfile = {
   created_at: string;
 };
 
-type Location = {
-  id: number;
-  store_id: string;
-  store_name: string;
-};
+// Location type removed - UserLocationsManager currently disabled
 
 export default function AdminUsersPage() {
   const { loading: authLoading } = useAuth();
@@ -46,13 +43,13 @@ export default function AdminUsersPage() {
           const usersData = await apiGet<{ users?: AdminProfile[] }>('/api/users');
           setUsers(usersData.users || []);
         } catch (e) {
-          console.error('Failed to fetch users', e);
+          logger.error('Failed to fetch users', e);
           setError('Failed to fetch users');
         }
 
         // locations fetch removed — UserLocationsManager is currently disabled
       } catch (error) {
-        console.error('Error fetching data:', error);
+        logger.error('Error fetching data:', error);
         setError(error instanceof Error ? error.message : 'An error occurred');
       } finally {
         setLoading(false);

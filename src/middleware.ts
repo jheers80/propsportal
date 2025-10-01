@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
       // For other routes, redirect quick access users to portal
       return NextResponse.redirect(new URL('/portal', request.url));
 
-    } catch (e) {
+    } catch {
       // Malformed cookie - clear and redirect
       const res = NextResponse.redirect(new URL('/login', request.url));
       res.cookies.delete('quick-access-session');

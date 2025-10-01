@@ -1,20 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { createAdminSupabase } from '@/lib/createAdminSupabase';
+import logger from '@/lib/logger';
 
 // GET - Fetch all features and roles
 export async function GET(request: NextRequest) {
   try {
     // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     // Get the current user from the session
     const authHeader = request.headers.get('authorization');
@@ -57,12 +49,12 @@ export async function GET(request: NextRequest) {
     ]);
 
     if (featuresResult.error) {
-      console.error('Error fetching features:', featuresResult.error);
+      logger.error('Error fetching features:', featuresResult.error);
       return NextResponse.json({ error: 'Failed to fetch features' }, { status: 500 });
     }
 
     if (rolesResult.error) {
-      console.error('Error fetching roles:', rolesResult.error);
+      logger.error('Error fetching roles:', rolesResult.error);
       return NextResponse.json({ error: 'Failed to fetch roles' }, { status: 500 });
     }
 
@@ -71,7 +63,7 @@ export async function GET(request: NextRequest) {
       roles: rolesResult.data || []
     });
   } catch (error) {
-    console.error('Error in features API:', error);
+    logger.error('Error in features API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -80,16 +72,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     // Get the current user from the session
     const authHeader = request.headers.get('authorization');
@@ -128,8 +111,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, ...data } = body;
 
-    let result;
-    let auditDetails;
+  let auditDetails;
 
     switch (action) {
       case 'create':
@@ -148,7 +130,7 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (createError) {
-          console.error('Error creating feature:', createError);
+          logger.error('Error creating feature:', createError);
           return NextResponse.json({ error: createError.message }, { status: 500 });
         }
 
@@ -170,7 +152,7 @@ export async function POST(request: NextRequest) {
           .eq('id', data.id);
 
         if (updateError) {
-          console.error('Error updating feature:', updateError);
+          logger.error('Error updating feature:', updateError);
           return NextResponse.json({ error: updateError.message }, { status: 500 });
         }
 
@@ -184,7 +166,7 @@ export async function POST(request: NextRequest) {
           .eq('id', data.id);
 
         if (deleteError) {
-          console.error('Error deleting feature:', deleteError);
+          logger.error('Error deleting feature:', deleteError);
           return NextResponse.json({ error: deleteError.message }, { status: 500 });
         }
 
@@ -210,7 +192,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error in features POST API:', error);
+    logger.error('Error in features POST API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

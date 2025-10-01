@@ -18,8 +18,8 @@ import {
   ListItem,
   ListItemText,
 } from '@mui/material';
-import { getSessionToken } from '@/lib/supabaseClient';
 import { apiPost, apiGet } from '@/lib/apiPost';
+import logger from '@/lib/logger';
 
 interface Location {
   id: number;
@@ -48,8 +48,8 @@ export default function PassphraseManager() {
     try {
       const data = await apiGet<{ passphrases?: ListedPassphrase[] }>('/api/passphrases/list');
       setList(data.passphrases || []);
-    } catch (e) {
-      console.error('Failed to fetch passphrase list', e);
+    } catch (err) {
+      logger.error('Failed to fetch passphrase list', err);
     }
     setListLoading(false);
   };
@@ -60,7 +60,7 @@ export default function PassphraseManager() {
         const data = await apiGet<{ locations?: Location[] }>('/api/locations');
         setLocations(data.locations || []);
       } catch (error) {
-        console.error('Error fetching locations:', error);
+        logger.error('Error fetching locations:', error);
         setError('Failed to fetch locations.');
       }
     };

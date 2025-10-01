@@ -1,19 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
+import { createAdminSupabase } from '@/lib/createAdminSupabase';
+import logger from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
     // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     // Get the current user from the session
     const authHeader = request.headers.get('authorization');
@@ -36,7 +28,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (profileError) {
-      console.error('Error fetching profile:', profileError);
+      logger.error('Error fetching profile:', profileError);
       return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
     }
 
@@ -60,7 +52,7 @@ export async function GET(request: NextRequest) {
         resolvedRoleName = userRole.name;
         isSuperAdmin = userRole.name === 'superadmin';
       }
-    } catch (e) {
+    } catch {
       // ignore and fall back to string checks below
     }
 
@@ -85,9 +77,9 @@ export async function GET(request: NextRequest) {
         .from('locations')
         .select('id, store_name, store_id, city, state, zip');
 
-      if (allLocationsError) {
-        console.error('Error fetching all locations for superadmin:', allLocationsError);
-      }
+    if (allLocationsError) {
+  logger.error('Error fetching all locations for superadmin:', allLocationsError);
+    }
 
       transformedLocations = (allLocations || []).map((loc: any) => ({
         id: loc.id,
@@ -113,8 +105,8 @@ export async function GET(request: NextRequest) {
         `)
         .eq('user_id', user.id);
 
-      if (locationsError) {
-        console.error('Error fetching locations for user:', user.id, locationsError);
+    if (locationsError) {
+  logger.error('Error fetching locations for user:', user.id, locationsError);
         // Don't fail the request if locations can't be fetched
       }
 
@@ -140,8 +132,8 @@ export async function GET(request: NextRequest) {
         `)
         .eq('role', profile.role);
 
-      if (permissionsError) {
-        console.error('Error fetching permissions:', permissionsError);
+    if (permissionsError) {
+  logger.error('Error fetching permissions:', permissionsError);
         // Don't fail the request if permissions can't be fetched
       } else {
         // Extract permission names
@@ -164,7 +156,7 @@ export async function GET(request: NextRequest) {
       permissions: permissionNames
     });
   } catch (error) {
-    console.error('Error in users/me API:', error);
+    logger.error('Error in users/me API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -177,32 +169,19 @@ export async function POST(request: NextRequest) {
     const referer = request.headers.get('referer') ?? request.headers.get('referrer') ?? 'none';
     const origin = request.headers.get('origin') ?? 'none';
     const contentLength = request.headers.get('content-length') ?? 'unknown';
-    const allHeaders: Record<string,string> = {};
-    for (const [k,v] of request.headers.entries()) {
-      allHeaders[k] = v;
-    }
-    let bodySnippet = '';
-    try {
-      const text = await request.text();
-      bodySnippet = text ? (text.length > 500 ? text.slice(0, 500) + '...[truncated]' : text) : '<empty>';
-    } catch (e) {
-      bodySnippet = '<unreadable>';
-    }
-
-    console.warn('[users/me] Received non-GET request', {
+    // concise logging to detect unexpected non-GET calls without dumping full headers/body
+    logger.warn('[users/me] unexpected non-GET request', {
       method: 'POST',
       url: request.url,
       ua,
       referer,
       origin,
       contentLength,
-      bodySnippet,
-      headers: allHeaders,
     });
 
     return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
   } catch (error) {
-    console.error('Error in users/me POST logger:', error);
+    logger.error('Error in users/me POST logger:', error);
     return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
   }
 }

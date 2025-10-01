@@ -1,7 +1,8 @@
-'use client';
+ 'use client';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase, getSessionToken } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 import { apiGet, apiDelete } from '@/lib/apiPost';
+import logger from '@/lib/logger';
 
 const AuthContext = createContext(undefined);
 
@@ -10,17 +11,12 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId) => {
-      try {
-        try {
-          const data = /** @type {{ profile?: any }} */ (await apiGet('/api/auth/profile'));
-          return data.profile;
-        } catch (e) {
-          console.error('Error fetching profile:', e);
-          return null;
-        }
+  const fetchProfile = async () => {
+    try {
+      const data = /** @type {{ profile?: any }} */ (await apiGet('/api/auth/profile'));
+      return data.profile;
     } catch (error) {
-      console.error('Error in fetchProfile:', error);
+      logger.error('Error fetching profile:', error);
       return null;
     }
   };
@@ -40,7 +36,7 @@ export function AuthProvider({ children }) {
         setUser(null);
         setProfile(null);
       } catch (error) {
-        console.error('Error signing out:', error);
+        logger.error('Error signing out:', error);
       }
   };
 
@@ -60,11 +56,11 @@ export function AuthProvider({ children }) {
             if (mounted) setProfile(profileData);
           }
         } catch (e) {
-          console.error('Error getting session:', e);
+          logger.error('Error getting session:', e);
           return;
         }
       } catch (error) {
-        console.error('Error in getInitialSession:', error);
+        logger.error('Error in getInitialSession:', error);
       } finally {
         if (mounted) {
           setLoading(false);
@@ -78,7 +74,8 @@ export function AuthProvider({ children }) {
       async (event, session) => {
         if (!mounted) return;
 
-        console.log('Auth state change:', event, session?.user?.id);
+  // auth state changed; avoid noisy console output in production
+  // logger.debug('Auth state change:', event, session?.user?.id);
 
         if (event === 'SIGNED_IN' && session?.user) {
           setUser(session.user);

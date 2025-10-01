@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Typography, Box, Container, Table, TableHead, TableRow, TableCell, TableBody, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, CircularProgress, Alert } from '@mui/material';
 import { apiPost, apiGet } from '@/lib/apiPost';
+import logger from '@/lib/logger';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 
@@ -47,7 +48,7 @@ const RolesPermissionsPage: React.FC = () => {
   setPermissionList(data.permissions || []);
   setRolePermissions(data.rolePermissions || []);
     } catch (err) {
-      console.error('Failed to fetch roles/permissions', err);
+      logger.error('Failed to fetch roles/permissions', err);
       setError('Failed to load roles and permissions.');
     } finally {
       setLoading(false);
@@ -88,7 +89,7 @@ const RolesPermissionsPage: React.FC = () => {
       await fetchData();
       handleCloseRoleDialog();
     } catch (err) {
-      console.error('Error saving role:', err);
+      logger.error('Error saving role:', err);
       setError('Failed to save role.');
     } finally {
       setLoading(false);
@@ -107,7 +108,7 @@ const RolesPermissionsPage: React.FC = () => {
       setSuccess('Role deleted.');
       await fetchData();
     } catch (err) {
-      console.error('Error deleting role:', err);
+      logger.error('Error deleting role:', err);
       setError('Failed to delete role.');
     } finally {
       setLoading(false);
@@ -139,7 +140,7 @@ const RolesPermissionsPage: React.FC = () => {
       await fetchData();
       handleClosePermissionDialog();
     } catch (err) {
-      console.error('Error saving permission:', err);
+      logger.error('Error saving permission:', err);
       setError('Failed to save permission.');
     } finally {
       setLoading(false);
@@ -158,7 +159,7 @@ const RolesPermissionsPage: React.FC = () => {
       setSuccess('Permission deleted.');
       await fetchData();
     } catch (err) {
-      console.error('Error deleting permission:', err);
+      logger.error('Error deleting permission:', err);
       setError('Failed to delete permission.');
     } finally {
       setLoading(false);
@@ -177,7 +178,7 @@ const RolesPermissionsPage: React.FC = () => {
       setSuccess('Permission added to role.');
       await fetchData();
     } catch (err) {
-      console.error('Error adding permission to role:', err);
+      logger.error('Error adding permission to role:', err);
       setError('Failed to add permission to role.');
     } finally {
       setLoading(false);
@@ -196,7 +197,7 @@ const RolesPermissionsPage: React.FC = () => {
       setSuccess('Permission removed from role.');
       await fetchData();
     } catch (err) {
-      console.error('Error removing permission from role:', err);
+      logger.error('Error removing permission from role:', err);
       setError('Failed to remove permission from role.');
     } finally {
       setLoading(false);

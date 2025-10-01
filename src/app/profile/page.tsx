@@ -22,8 +22,9 @@ import {
   DialogTitle,
 } from '@mui/material';
 import { Edit as EditIcon, Save as SaveIcon, Cancel as CancelIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import logger from '@/lib/logger';
 import Navbar from '@/components/Navbar';
-import { getSessionToken } from '@/lib/supabaseClient';
+// getSessionToken not used in this page
 import { apiPost, apiDelete } from '@/lib/apiPost';
 
 const getRoleDisplayName = (role: string | number | undefined): string => {
@@ -84,7 +85,7 @@ export default function ProfilePage() {
       setFeedback({ type: 'success', message: 'Profile updated successfully.' });
       setSaving(false);
     } catch (error) {
-      console.error('Error updating profile:', error);
+      logger.error('Error updating profile:', error);
       setFeedback({ type: 'error', message: 'An unexpected error occurred' });
       setSaving(false);
     }
@@ -116,7 +117,7 @@ export default function ProfilePage() {
       setFeedback({ type: 'success', message: 'Location unlinked successfully.' });
       setUnlinkDialog({ open: false, locationId: null, locationName: '' });
     } catch (error) {
-      console.error('Error unlinking location:', error);
+      logger.error('Error unlinking location:', error);
       setFeedback({ type: 'error', message: 'An unexpected error occurred' });
     } finally {
       setUnlinking(false);

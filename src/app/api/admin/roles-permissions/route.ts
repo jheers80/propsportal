@@ -1,20 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
+import { createAdminSupabase } from '@/lib/createAdminSupabase';
 import { NextRequest, NextResponse } from 'next/server';
+import logger from '@/lib/logger';
 
 // GET - Fetch all roles, permissions, and role-permissions
 export async function GET(request: NextRequest) {
   try {
     // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     // Get the current user from the session
     const authHeader = request.headers.get('authorization');
@@ -58,17 +50,17 @@ export async function GET(request: NextRequest) {
     ]);
 
     if (userRolesResult.error) {
-      console.error('Error fetching user roles:', userRolesResult.error);
+      logger.error('Error fetching user roles:', userRolesResult.error);
       return NextResponse.json({ error: 'Failed to fetch user roles' }, { status: 500 });
     }
 
     if (permissionsResult.error) {
-      console.error('Error fetching permissions:', permissionsResult.error);
+      logger.error('Error fetching permissions:', permissionsResult.error);
       return NextResponse.json({ error: 'Failed to fetch permissions' }, { status: 500 });
     }
 
     if (rolePermissionsResult.error) {
-      console.error('Error fetching role permissions:', rolePermissionsResult.error);
+      logger.error('Error fetching role permissions:', rolePermissionsResult.error);
       return NextResponse.json({ error: 'Failed to fetch role permissions' }, { status: 500 });
     }
 
@@ -78,7 +70,7 @@ export async function GET(request: NextRequest) {
       rolePermissions: rolePermissionsResult.data || []
     });
   } catch (error) {
-    console.error('Error in roles-permissions API:', error);
+    logger.error('Error in roles-permissions API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -87,16 +79,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Create Supabase client with service role key for admin operations
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabaseAdmin = createAdminSupabase();
 
     // Get the current user from the session
     const authHeader = request.headers.get('authorization');
@@ -135,8 +118,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, ...data } = body;
 
-    let result;
-    let auditDetails;
+  let auditDetails;
 
     switch (action) {
       case 'add_role':
@@ -149,7 +131,7 @@ export async function POST(request: NextRequest) {
           });
 
         if (addRoleError) {
-          console.error('Error adding role:', addRoleError);
+          logger.error('Error adding role:', addRoleError);
           return NextResponse.json({ error: addRoleError.message }, { status: 500 });
         }
 
@@ -167,7 +149,7 @@ export async function POST(request: NextRequest) {
           .eq('id', data.id);
 
         if (updateRoleError) {
-          console.error('Error updating role:', updateRoleError);
+          logger.error('Error updating role:', updateRoleError);
           return NextResponse.json({ error: updateRoleError.message }, { status: 500 });
         }
 
@@ -181,7 +163,7 @@ export async function POST(request: NextRequest) {
           .eq('id', data.id);
 
         if (deleteRoleError) {
-          console.error('Error deleting role:', deleteRoleError);
+          logger.error('Error deleting role:', deleteRoleError);
           return NextResponse.json({ error: deleteRoleError.message }, { status: 500 });
         }
 
@@ -197,7 +179,7 @@ export async function POST(request: NextRequest) {
           });
 
         if (addPermError) {
-          console.error('Error adding permission:', addPermError);
+          logger.error('Error adding permission:', addPermError);
           return NextResponse.json({ error: addPermError.message }, { status: 500 });
         }
 
@@ -214,7 +196,7 @@ export async function POST(request: NextRequest) {
           .eq('id', data.id);
 
         if (updatePermError) {
-          console.error('Error updating permission:', updatePermError);
+          logger.error('Error updating permission:', updatePermError);
           return NextResponse.json({ error: updatePermError.message }, { status: 500 });
         }
 
@@ -228,7 +210,7 @@ export async function POST(request: NextRequest) {
           .eq('id', data.id);
 
         if (deletePermError) {
-          console.error('Error deleting permission:', deletePermError);
+          logger.error('Error deleting permission:', deletePermError);
           return NextResponse.json({ error: deletePermError.message }, { status: 500 });
         }
 
@@ -244,7 +226,7 @@ export async function POST(request: NextRequest) {
           });
 
         if (assignError) {
-          console.error('Error assigning permission:', assignError);
+          logger.error('Error assigning permission:', assignError);
           return NextResponse.json({ error: assignError.message }, { status: 500 });
         }
 
@@ -258,7 +240,7 @@ export async function POST(request: NextRequest) {
           .match({ role: data.roleId, permission_id: data.permissionId });
 
         if (unassignError) {
-          console.error('Error unassigning permission:', unassignError);
+          logger.error('Error unassigning permission:', unassignError);
           return NextResponse.json({ error: unassignError.message }, { status: 500 });
         }
 
@@ -284,7 +266,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error in roles-permissions POST API:', error);
+    logger.error('Error in roles-permissions POST API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

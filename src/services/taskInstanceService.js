@@ -13,7 +13,7 @@ import { generateNextInstance } from './recurrenceEngine';
  */
 export async function generateScheduledInstances() {
   try {
-    console.log('Starting scheduled instance generation...');
+  // Starting scheduled instance generation
 
     // Step 1: Find all recurring tasks with repeat_from_completion = false
     const { data: tasks, error: tasksError } = await supabase
@@ -35,7 +35,7 @@ export async function generateScheduledInstances() {
         .single();
 
       if (instanceError && instanceError.code !== 'PGRST116') {
-        console.error(`Error fetching instance for task ${task.id}:`, instanceError);
+        logger.error(`Error fetching instance for task ${task.id}:`, instanceError);
         continue;
       }
 
@@ -63,17 +63,17 @@ export async function generateScheduledInstances() {
           .insert(nextInstanceData);
 
         if (createError) {
-          console.error(`Error creating instance for task ${task.id}:`, createError);
+          logger.error(`Error creating instance for task ${task.id}:`, createError);
         } else {
-          console.log(`Created new instance for task ${task.id}`);
+          // created new instance for task
         }
       }
     }
 
-    console.log('Scheduled instance generation completed');
+  // scheduled instance generation completed
     return { success: true };
   } catch (error) {
-    console.error('Error in scheduled instance generation:', error);
+    logger.error('Error in scheduled instance generation:', error);
     return { success: false, error };
   }
 }

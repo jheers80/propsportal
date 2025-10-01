@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiGet } from '@/lib/apiPost';
+import logger from '@/lib/logger';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import {
@@ -51,11 +52,11 @@ export default function AuditTrailsPage() {
         const data = await apiGet<{ auditTrails?: AuditTrail[] }>('/api/admin/audit-trails');
         setAuditTrails(data.auditTrails || []);
       } catch (err) {
-        console.error('Error fetching audit trails:', err);
+        logger.error('Error fetching audit trails:', err);
         setError('Failed to fetch audit trails');
       }
     } catch (err) {
-      console.error('Error fetching audit trails:', err);
+      logger.error('Error fetching audit trails:', err);
       setError('Failed to fetch audit trails');
     } finally {
       setLoading(false);

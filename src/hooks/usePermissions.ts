@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { apiGet } from '@/lib/apiPost';
 import { useAuth } from '@/contexts/AuthContext';
+import logger from '@/lib/logger';
 
 export function usePermissions() {
   const { profile } = useAuth();
@@ -32,7 +33,7 @@ export function usePermissions() {
             return;
           }
         } catch (error) {
-          console.error('Error fetching permissions from API:', error);
+          logger.error('Error fetching permissions from API:', error);
         }
 
         // Fallback to direct database query if API fails
@@ -47,7 +48,7 @@ export function usePermissions() {
           .eq('role', (profile as { role?: string | number }).role);
 
         if (error) {
-          console.error('Error fetching permissions:', error);
+          logger.error('Error fetching permissions:', error);
           setPermissions([]);
         } else {
           let names: string[] = [];

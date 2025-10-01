@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { completeTask } from '../services/taskService';
+import { supabase } from '../lib/supabaseClient';
+import logger from '../lib/logger';
 
 /**
  * Custom hook for task completion functionality
@@ -21,9 +23,7 @@ export function useTaskCompletion() {
 
     try {
       // Get current user ID (this should come from your auth context)
-      const { data: { user } } = await import('../lib/supabaseClient').then(({ supabase }) =>
-        supabase.auth.getUser()
-      );
+      const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
         throw new Error('User not authenticated');
@@ -37,6 +37,7 @@ export function useTaskCompletion() {
 
       return result;
     } catch (err) {
+      logger.error('Error completing task via hook:', err);
       setError(err);
       return { success: false, error: err };
     } finally {
