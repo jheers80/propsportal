@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import apiPost from '@/lib/apiPost';
+import { apiPost } from '@/lib/apiPost';
 import {
   Box,
   TextField,

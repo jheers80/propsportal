@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Container, Box, Typography, TextField, Button, Alert, CircularProgress } from '@mui/material';
-import apiPost from '@/lib/apiPost';
+import { apiPost } from '@/lib/apiPost';
 
 export default function LinkLocationPage() {
   const [passphrase, setPassphrase] = useState('');

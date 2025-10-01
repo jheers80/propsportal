@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar';
 import { Container, Paper, Stack, Typography, Button, TextField, Alert, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useRouter } from 'next/navigation';
 // removed useSearchParams to avoid prerender issues; read params on client instead
-import apiPost from '@/lib/apiPost';
+import { apiPost } from '@/lib/apiPost';
 
 export default function CreateTaskPage() {
   const router = useRouter();

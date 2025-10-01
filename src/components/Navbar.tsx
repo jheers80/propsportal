@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import Link from 'next/link';
-import apiPost from '@/lib/apiPost';
+import { apiPost } from '@/lib/apiPost';
 
 export default function Navbar() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

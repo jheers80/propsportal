@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import apiPost, { apiGet } from '@/lib/apiPost';
+import { apiPost, apiGet } from '@/lib/apiPost';
 import {
   Box,
   Typography,

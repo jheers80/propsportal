@@ -31,7 +31,7 @@ import {
 } from '@mui/material';
 import { Assignment, LocationOn, ListAlt } from '@mui/icons-material';
 import { fetchTaskLists } from '@/services/taskListService';
-import apiPost from '@/lib/apiPost';
+import { apiPost } from '@/lib/apiPost';
 import type { SelectChangeEvent } from '@mui/material';
 
 // Types for tasks UI

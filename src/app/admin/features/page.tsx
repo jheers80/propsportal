@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { TextField, Button, Select, MenuItem, Checkbox, ListItemText, FormControl, InputLabel, OutlinedInput, Typography, Box, Switch } from '@mui/material';
-import apiPost, { apiGet } from '@/lib/apiPost';
+import { apiPost, apiGet } from '@/lib/apiPost';
 import { materialIcons } from '@/lib/materialIcons';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';

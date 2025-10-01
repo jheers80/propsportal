@@ -24,7 +24,7 @@ import {
 import { Edit as EditIcon, Save as SaveIcon, Cancel as CancelIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import Navbar from '@/components/Navbar';
 import { getSessionToken } from '@/lib/supabaseClient';
-import apiPost, { apiDelete } from '@/lib/apiPost';
+import { apiPost, apiDelete } from '@/lib/apiPost';
 
 const getRoleDisplayName = (role: string | number | undefined): string => {
   const roleMap: { [key: number]: string } = {

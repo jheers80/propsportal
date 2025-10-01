@@ -19,7 +19,7 @@ import {
   ListItemText,
 } from '@mui/material';
 import { getSessionToken } from '@/lib/supabaseClient';
-import apiPost, { apiGet } from '@/lib/apiPost';
+import { apiPost, apiGet } from '@/lib/apiPost';
 
 interface Location {
   id: number;

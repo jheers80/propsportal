@@ -1,7 +1,7 @@
 'use client';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, getSessionToken } from '@/lib/supabaseClient';
-import apiGet, { apiDelete } from '@/lib/apiPost';
+import { apiGet, apiDelete } from '@/lib/apiPost';
 
 const AuthContext = createContext(undefined);
 

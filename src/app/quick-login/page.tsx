@@ -10,7 +10,7 @@ import {
   Alert,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
-import apiPost from '@/lib/apiPost';
+import { apiPost } from '@/lib/apiPost';
 
 export default function QuickLoginPage() {
   const [p_passphrase, setp_Passphrase] = useState('');

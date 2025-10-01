@@ -71,4 +71,5 @@ export async function apiDelete<T = unknown>(path: string, body?: unknown): Prom
   return json as T;
 }
 
-export default apiPost;
+// export apiPost as a named export only to avoid accidental default-import mistakes
+// (apiPost is already exported via its function declaration above)
