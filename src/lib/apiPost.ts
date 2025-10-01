@@ -23,20 +23,7 @@ async function parseJsonSafe(resp: Response): Promise<unknown> {
 
 export async function apiPost<T = unknown>(path: string, body?: unknown): Promise<T> {
   const headers = await attachAuth({ 'Content-Type': 'application/json' });
-  // Dev instrumentation: trace unexpected POSTs to /api/users/me
-  try {
-    if (path === '/api/users/me') {
-      // Print a stack trace in the browser console to help locate the caller
-      // (console.trace will show the client-side stack). Also keep a server-side
-      // friendly log via console.debug.
-      // eslint-disable-next-line no-console
-      console.debug('[debug] apiPost called for /api/users/me — tracing:');
-      // eslint-disable-next-line no-console
-      console.trace();
-    }
-  } catch (_e) {
-    // ignore instrumentation errors
-  }
+  // normal request flow
   const resp = await fetch(path, {
     method: 'POST',
     headers,
