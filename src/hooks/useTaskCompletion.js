@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { completeTask } from '../services/taskService';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, getSessionToken } from '../lib/supabaseClient';
 import logger from '../lib/logger';
 
 /**
@@ -22,20 +21,26 @@ export function useTaskCompletion() {
     setError(null);
 
     try {
-      // Get current user ID (this should come from your auth context)
-      const { data: { user } } = await supabase.auth.getUser();
+      // Get session token for authenticated request to server API
+      const token = await getSessionToken();
+      if (!token) throw new Error('User not authenticated');
 
-      if (!user) {
-        throw new Error('User not authenticated');
+      const res = await fetch('/api/task-instances/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ instance_id: instanceId, notes })
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || 'Failed to complete');
+        return { success: false, error: json.error || 'Failed to complete' };
       }
 
-      const result = await completeTask(instanceId, user.id, notes);
-
-      if (!result.success) {
-        setError(result.error);
-      }
-
-      return result;
+      return { success: true, data: json };
     } catch (err) {
       logger.error('Error completing task via hook:', err);
       setError(err);

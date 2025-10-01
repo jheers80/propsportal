@@ -16,8 +16,13 @@ function prefix(level: string) {
 
 function stringifyArg(a: any) {
   if (typeof a === 'string') return a;
+  // If it's an Error, include stack when available for better diagnostics
+  if (a instanceof Error) {
+    return a.stack || a.message || String(a);
+  }
   try {
-    return JSON.stringify(a);
+    // Pretty-print objects for readability; fall back to compact JSON when circular
+    return JSON.stringify(a, null, 2);
   } catch {
     try { return String(a); } catch { return '[unserializable]'; }
   }
@@ -33,9 +38,34 @@ function writeToSink(level: 'error' | 'warn' | 'info' | 'debug', message: string
   // Fallback to global console but access it by bracket so there's no literal "console." token
   try {
     const globalConsole: any = typeof globalThis !== 'undefined' ? (globalThis as any)['console'] : undefined;
-    if (globalConsole && typeof globalConsole[level] === 'function') {
-      globalConsole[level](message);
-      return;
+    if (globalConsole) {
+      const fn = typeof globalConsole[level] === 'function' ? globalConsole[level] : (typeof globalConsole.log === 'function' ? globalConsole.log : undefined);
+      if (fn && typeof fn === 'function') {
+        // Call asynchronously to avoid any synchronous exceptions in
+        // user-provided or test-mocked console implementations bubbling
+        // into application code (for example when console methods are
+        // proxied or intentionally throw). Use queueMicrotask for low
+        // overhead scheduling and swallow any errors.
+        try {
+          queueMicrotask(() => {
+            try {
+              fn.call(globalConsole, message);
+            } catch (e) {
+              // swallow
+            }
+          });
+          return;
+        } catch (e) {
+          // If queueMicrotask isn't available or scheduling fails, fall
+          // back to synchronous call guarded by try/catch.
+          try {
+            fn.call(globalConsole, message);
+            return;
+          } catch {
+            // fall through
+          }
+        }
+      }
     }
   } catch {
     // ignore

@@ -1,6 +1,6 @@
  'use client';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, getSessionToken } from '@/lib/supabaseClient';
 import { apiGet, apiDelete } from '@/lib/apiPost';
 import logger from '@/lib/logger';
 

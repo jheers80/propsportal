@@ -1,6 +1,7 @@
 import { createAdminSupabase } from '@/lib/createAdminSupabase';
 import { NextRequest, NextResponse } from 'next/server';
 import logger from '@/lib/logger';
+import { generateNextInstance } from '@/services/recurrenceEngine';
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,13 +77,51 @@ export async function POST(request: NextRequest) {
 
     if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+    // Prefer to perform completion + next-instance insertion atomically via a DB function
+    // Compute next instance in application code (so recurrence logic stays in JS)
+    let nextInstanceData: any = null;
+    if (task.is_recurring && task.repeat_from_completion) {
+      try {
+        nextInstanceData = generateNextInstance(task, new Date());
+        // normalize to plain object if Date present
+        if (nextInstanceData && nextInstanceData.due_date instanceof Date) {
+          nextInstanceData = { ...nextInstanceData, due_date: nextInstanceData.due_date.toISOString() };
+        }
+      } catch (e) {
+        logger.error('Recurrence engine failed to generate next instance:', e);
+        nextInstanceData = null;
+      }
+    }
+
+    // Try RPC that performs completion + optional next instance insertion in one transaction.
+    try {
+      if (typeof (supabaseAdmin as any).rpc === 'function') {
+        const rpcPayload = {
+          completion: { task_id: task.id, task_instance_id: instance_id, completed_by: user.id },
+          next_instance: nextInstanceData
+        };
+
+        // supabase.rpc(functionName, params)
+        const { error: rpcErr } = await (supabaseAdmin as any).rpc('complete_task_and_insert_next', rpcPayload);
+        if (!rpcErr) {
+          return NextResponse.json({ success: true });
+        }
+        // If RPC exists but returned an error, log and fall back
+        logger.error('RPC complete_task_and_insert_next failed, falling back:', rpcErr);
+      }
+    } catch (rpcEx) {
+      // If RPC call throws, fall back to non-atomic flow
+      logger.error('RPC call failed or not available, falling back to non-atomic completion:', rpcEx);
+    }
+
+    // Fallback: non-atomic path (best-effort)
     // Insert completion
     const { error: compErr } = await supabaseAdmin
       .from('task_completions')
       .insert({ task_id: task.id, task_instance_id: instance_id, completed_by: user.id });
 
     if (compErr) {
-      logger.error('Error inserting completion:', compErr);
+      logger.error('Error inserting completion (fallback):', compErr);
       return NextResponse.json({ error: compErr.message || compErr }, { status: 500 });
     }
 
@@ -92,9 +131,21 @@ export async function POST(request: NextRequest) {
       .update({ status: 'completed' })
       .eq('id', instance_id);
 
-    // If recurring and repeat_from_completion, create next instance
-    if (task.is_recurring && task.repeat_from_completion) {
-      // calculate next using recurrence rules (server could call recurrence engine), simple approach: leave to background job
+    // Fallback: insert next instance if computed
+    if (nextInstanceData && nextInstanceData.due_date) {
+      try {
+        const insertPayload = {
+          task_id: nextInstanceData.task_id,
+          due_date: nextInstanceData.due_date,
+          status: nextInstanceData.status || 'pending'
+        };
+        const { error: nextErr } = await supabaseAdmin
+          .from('task_instances')
+          .insert(insertPayload);
+        if (nextErr) logger.error('Error creating next task instance after completion (fallback):', nextErr);
+      } catch (e) {
+        logger.error('Error inserting next instance in fallback path:', e);
+      }
     }
 
     return NextResponse.json({ success: true });

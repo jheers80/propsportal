@@ -4,7 +4,7 @@
  * This would typically be deployed as a Supabase Edge Function or run via external cron job
  */
 
-import { supabase } from '../lib/supabaseClient';
+import { createAdminSupabase } from '../lib/createAdminSupabase';
 import { generateNextInstance } from './recurrenceEngine';
 
 /**
@@ -16,6 +16,8 @@ export async function generateScheduledInstances() {
   // Starting scheduled instance generation
 
     // Step 1: Find all recurring tasks with repeat_from_completion = false
+    const supabase = createAdminSupabase();
+
     const { data: tasks, error: tasksError } = await supabase
       .from('tasks')
       .select('*')

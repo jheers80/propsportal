@@ -3,7 +3,7 @@
  * Handles task business logic and Supabase interactions
  */
 
-import { supabase } from '../lib/supabaseClient';
+import { createAdminSupabase } from '../lib/createAdminSupabase';
 import logger from '../lib/logger';
 import { generateNextInstance } from './recurrenceEngine';
 
@@ -16,6 +16,8 @@ import { generateNextInstance } from './recurrenceEngine';
  */
 export async function completeTask(instanceId, userId, notes = null) {
   try {
+    const supabase = createAdminSupabase();
+
     // Step 1: Get task instance and parent task
     const { data: instance, error: instanceError } = await supabase
       .from('task_instances')
@@ -28,7 +30,7 @@ export async function completeTask(instanceId, userId, notes = null) {
     const task = instance.tasks;
 
     // Step 2: Create completion record
-    const { error: completionError } = await supabase
+      const { error: completionError } = await supabase
       .from('task_completions')
       .insert({
         task_id: task.id,
@@ -40,7 +42,7 @@ export async function completeTask(instanceId, userId, notes = null) {
     if (completionError) throw completionError;
 
     // Step 3: Update instance status to 'completed'
-    const { error: updateError } = await supabase
+      const { error: updateError } = await supabase
       .from('task_instances')
       .update({ status: 'completed' })
       .eq('id', instanceId);
