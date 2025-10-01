@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import apiPost from '@/lib/apiPost';
 import {
   Box,
   TextField,
@@ -35,36 +35,7 @@ export default function AddUserForm({ onUserAdded }: AddUserFormProps) {
     setLoading(true);
 
     try {
-      // Get the access token for API calls
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setError('Authentication required');
-        setLoading(false);
-        return;
-      }
-
-      // Create user via API
-      const response = await fetch('/api/users/create', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          full_name: fullName,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to create user');
-        setLoading(false);
-        return;
-      }
-
-      const data = await response.json();
+      const data = await apiPost<{ user: { id: string; email: string } }>('/api/users/create', { email, password, full_name: fullName });
 
       setSuccess(`User ${email} created successfully.`);
       const newUserProfile: Profile = {

@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Container, Box, Typography, TextField, Button, Alert, CircularProgress } from '@mui/material';
+import apiPost from '@/lib/apiPost';
 
 export default function LinkLocationPage() {
   const [passphrase, setPassphrase] = useState('');
@@ -14,13 +15,7 @@ export default function LinkLocationPage() {
     setError(null);
     setMessage(null);
     try {
-      const res = await fetch('/api/link-location', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passphrase }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.message || 'Failed to link');
+  const data = await apiPost<{ success?: boolean; message?: string }>('/api/link-location', { passphrase });
       setMessage('Location successfully linked to your account.');
       setPassphrase('');
   } catch (e: unknown) {

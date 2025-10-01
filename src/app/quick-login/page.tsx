@@ -10,6 +10,7 @@ import {
   Alert,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
+import apiPost from '@/lib/apiPost';
 
 export default function QuickLoginPage() {
   const [p_passphrase, setp_Passphrase] = useState('');
@@ -25,13 +26,7 @@ export default function QuickLoginPage() {
     setSuccess(null);
 
     try {
-      const res = await fetch('/api/quick-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ p_passphrase, p_role }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
+  const data = await apiPost<{ success?: boolean; message?: string }>('/api/quick-login', { p_passphrase, p_role });
       setSuccess('Quick access granted for 1 hour.');
       // Optional: redirect to a store-specific page or dashboard
       router.push('/portal/');

@@ -43,18 +43,19 @@ export default function PortalPage() {
     async function fetchFeatures() {
       setLoading(true);
       try {
-        const res = await fetch('/api/features');
-        const json = await res.json();
+        const { apiGet } = await import('@/lib/apiPost');
+        const json = await apiGet<{ features?: Feature[] }>('/api/features');
         console.log('Features API response:', json);
         console.log('Features array length:', json.features?.length || 0);
         if (json.features) {
           console.log('First feature:', json.features[0]);
           setFeatures(json.features);
         }
-      } catch (error) {
-        console.error('Error fetching features:', error);
+      } catch (err) {
+        console.error('Error fetching features:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     fetchFeatures();
   }, []);

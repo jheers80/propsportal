@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { TextField, Button, Select, MenuItem, Checkbox, ListItemText, FormControl, InputLabel, OutlinedInput, Typography, Box, Switch } from '@mui/material';
-import { supabase } from '@/lib/supabaseClient';
+import apiPost, { apiGet } from '@/lib/apiPost';
 import { materialIcons } from '@/lib/materialIcons';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -35,7 +35,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 
 
 export default function FeaturesAdminPage() {
-  const { profile, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
   const { permissions, loading: permissionsLoading } = usePermissions();
   const [features, setFeatures] = useState<Feature[]>([]);
   const [form, setForm] = useState<Feature>(emptyFeature);
@@ -50,24 +50,8 @@ export default function FeaturesAdminPage() {
 
   async function fetchRoles() {
     try {
-      // Get the access token for API calls
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        return;
-      }
-
-      const response = await fetch('/api/admin/features', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setRolesList(data.roles || []);
-      }
+      const data = await apiGet<{ roles?: UserRole[] }>('/api/admin/features');
+      setRolesList(data.roles || []);
     } catch (error) {
       console.error('Error fetching roles:', error);
     }
@@ -76,25 +60,8 @@ export default function FeaturesAdminPage() {
   async function fetchFeatures() {
     setLoading(true);
     try {
-      // Get the access token for API calls
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch('/api/admin/features', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setFeatures(data.features || []);
-      }
+      const data = await apiGet<{ features?: Feature[] }>('/api/admin/features');
+      setFeatures(data.features || []);
     } catch (err) {
       console.error('Error fetching features:', err);
     }
@@ -106,38 +73,10 @@ export default function FeaturesAdminPage() {
     setLoading(true);
 
     try {
-      // Get the access token for API calls
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setLoading(false);
-        return;
-      }
-
       const action = editingId ? 'update' : 'create';
-      const requestBody = {
-        action,
-        ...form
-      };
-
-      if (editingId) {
-        requestBody.id = editingId;
-      }
-
-      const response = await fetch('/api/admin/features', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error saving feature:', errorData.error);
-        setLoading(false);
-        return;
-      }
+      const requestBody = { action, ...form } as any;
+      if (editingId) requestBody.id = editingId;
+      await apiPost('/api/admin/features', requestBody);
 
       setForm(emptyFeature);
       setEditingId(null);
@@ -157,32 +96,7 @@ export default function FeaturesAdminPage() {
     setLoading(true);
 
     try {
-      // Get the access token for API calls
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch('/api/admin/features', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'delete',
-          id: id
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error deleting feature:', errorData.error);
-        setLoading(false);
-        return;
-      }
-
+      await apiPost('/api/admin/features', { action: 'delete', id });
       await fetchFeatures();
     } catch (error) {
       console.error('Error deleting feature:', error);

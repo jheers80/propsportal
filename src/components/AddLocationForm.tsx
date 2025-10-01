@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import apiPost from '@/lib/apiPost';
 import {
   Box,
   TextField,
@@ -47,38 +47,14 @@ export default function AddLocationForm({ onLocationAdded }: AddLocationFormProp
     setLoading(true);
 
     try {
-      // Get the access token for API calls
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setError('Authentication required');
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch('/api/locations', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          store_name: newLocation.store_name,
-          store_id: newLocation.store_id,
-          address: '', // Address is not in the form, so we'll leave it empty
-          city: newLocation.city,
-          state: newLocation.state,
-          zip: newLocation.zip,
-        }),
+      const data = await apiPost<{ location: Location }>('/api/locations', {
+        store_name: newLocation.store_name,
+        store_id: newLocation.store_id,
+        address: '', // Address is not in the form, so we'll leave it empty
+        city: newLocation.city,
+        state: newLocation.state,
+        zip: newLocation.zip,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to add location');
-        setLoading(false);
-        return;
-      }
-
-      const data = await response.json();
       setSuccess('Location added successfully.');
       onLocationAdded({
         id: data.location.id,

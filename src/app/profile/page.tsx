@@ -15,10 +15,16 @@ import {
   IconButton,
   Button,
   Alert,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from '@mui/material';
-import { Edit as EditIcon, Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Save as SaveIcon, Cancel as CancelIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import Navbar from '@/components/Navbar';
-import { supabase } from '@/lib/supabaseClient';
+import { getSessionToken } from '@/lib/supabaseClient';
+import apiPost, { apiDelete } from '@/lib/apiPost';
 
 const getRoleDisplayName = (role: string | number | undefined): string => {
   const roleMap: { [key: number]: string } = {
@@ -40,12 +46,18 @@ const getRoleDisplayName = (role: string | number | undefined): string => {
 };
 
 export default function ProfilePage() {
-  const { user, profile, locations, loading, error, setProfile } = useUser();
+  const { user, profile, locations, loading, error, setProfile, refreshLocations } = useUser();
   const [editMode, setEditMode] = useState(false);
   const [fullName, setFullName] = useState('');
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [unlinkDialog, setUnlinkDialog] = useState<{ open: boolean; locationId: number | null; locationName: string }>({
+    open: false,
+    locationId: null,
+    locationName: '',
+  });
+  const [unlinking, setUnlinking] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -60,34 +72,14 @@ export default function ProfilePage() {
     setSaving(true);
     setFeedback(null);
     try {
-      // Get the access token for API calls
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setFeedback({ type: 'error', message: 'Authentication required' });
+      try {
+  const data = await apiPost<{ profile: { id: string; role: number | string; created_at: string; full_name: string } }>('/api/auth/profile', { full_name: fullName });
+  setProfile(data.profile);
+      } catch (e: any) {
+        setFeedback({ type: 'error', message: e?.message || 'Failed to update profile' });
         setSaving(false);
         return;
       }
-
-      const response = await fetch('/api/auth/profile', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          full_name: fullName,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        setFeedback({ type: 'error', message: errorData.error || 'Failed to update profile' });
-        setSaving(false);
-        return;
-      }
-
-      const data = await response.json();
-      setProfile(data.profile);
       setEditMode(false);
       setFeedback({ type: 'success', message: 'Profile updated successfully.' });
       setSaving(false);
@@ -96,6 +88,43 @@ export default function ProfilePage() {
       setFeedback({ type: 'error', message: 'An unexpected error occurred' });
       setSaving(false);
     }
+  };
+
+  const handleUnlinkLocation = (locationId: number, locationName: string) => {
+    setUnlinkDialog({
+      open: true,
+      locationId,
+      locationName,
+    });
+  };
+
+  const confirmUnlinkLocation = async () => {
+    if (!unlinkDialog.locationId) return;
+
+    setUnlinking(true);
+    setFeedback(null);
+    
+    try {
+      try {
+        await apiDelete('/api/unlink-location', { locationId: unlinkDialog.locationId });
+        // Refresh locations after successful unlink
+        await refreshLocations();
+      } catch (e: any) {
+        setFeedback({ type: 'error', message: e?.message || 'Failed to unlink location' });
+        return;
+      }
+      setFeedback({ type: 'success', message: 'Location unlinked successfully.' });
+      setUnlinkDialog({ open: false, locationId: null, locationName: '' });
+    } catch (error) {
+      console.error('Error unlinking location:', error);
+      setFeedback({ type: 'error', message: 'An unexpected error occurred' });
+    } finally {
+      setUnlinking(false);
+    }
+  };
+
+  const cancelUnlinkLocation = () => {
+    setUnlinkDialog({ open: false, locationId: null, locationName: '' });
   };
 
   return (
@@ -186,8 +215,26 @@ export default function ProfilePage() {
                   {locations.length > 0 ? (
                     <List>
                       {locations.map((location) => (
-                        <ListItem key={location.id}>
-                          <ListItemText primary={location.store_name} />
+                        <ListItem 
+                          key={location.id} 
+                          secondaryAction={
+                            !isSuperAdmin ? (
+                              <IconButton 
+                                edge="end" 
+                                aria-label="delete" 
+                                onClick={() => handleUnlinkLocation(location.id, location.store_name)}
+                                color="error"
+                                disabled={unlinking}
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                            ) : null
+                          }
+                        >
+                          <ListItemText 
+                            primary={location.store_name}
+                            secondary={isSuperAdmin ? "Super Admin access to all locations" : "Linked via passphrase"}
+                          />
                         </ListItem>
                       ))}
                     </List>
@@ -213,6 +260,31 @@ export default function ProfilePage() {
           )}
         </Box>
       </Container>
+
+      {/* Unlink Location Confirmation Dialog */}
+      <Dialog
+        open={unlinkDialog.open}
+        onClose={cancelUnlinkLocation}
+        aria-labelledby="unlink-dialog-title"
+        aria-describedby="unlink-dialog-description"
+      >
+        <DialogTitle id="unlink-dialog-title">
+          Unlink Location
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="unlink-dialog-description">
+            Are you sure you want to unlink "{unlinkDialog.locationName}"? You will no longer have access to this location unless you link it again with a valid passphrase.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelUnlinkLocation} disabled={unlinking}>
+            Cancel
+          </Button>
+          <Button onClick={confirmUnlinkLocation} color="error" disabled={unlinking}>
+            {unlinking ? <CircularProgress size={20} /> : 'Unlink'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import apiGet from '@/lib/apiPost';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function usePermissions() {
@@ -22,31 +23,13 @@ export function usePermissions() {
       const fetchPermissions = async () => {
         setLoading(true);
 
-        // Get the access token for API calls
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) {
-          setPermissions([]);
-          setLoading(false);
-          return;
-        }
-
         // Try to get permissions from the users/me API if not already in profile
         try {
-          const response = await fetch('/api/users/me', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.permissions && Array.isArray(data.permissions)) {
-              setPermissions(data.permissions);
-              setLoading(false);
-              return;
-            }
+          const data = await apiGet<{ permissions?: string[] }>('/api/users/me');
+          if (data.permissions && Array.isArray(data.permissions)) {
+            setPermissions(data.permissions);
+            setLoading(false);
+            return;
           }
         } catch (error) {
           console.error('Error fetching permissions from API:', error);

@@ -1,8 +1,29 @@
 -- =====================================================
--- Complete PR Ops Portal Database Setup
+-- PR Ops Portal - Complete Database Setup
 -- =====================================================
--- This file combines all necessary SQL for production deployment
--- Run this in your Supabase SQL editor to set up the complete database
+-- 
+-- This is the PRIMARY and ONLY database setup file needed for the PR Ops Portal.
+-- This file contains EVERYTHING required for a complete database setup:
+--
+-- ✅ All tables with proper relationships and constraints
+-- ✅ All functions (user management, authentication, quick login)
+-- ✅ All triggers (auto profile creation, audit logging)
+-- ✅ Complete Row Level Security (RLS) policies
+-- ✅ All indexes for performance optimization
+-- ✅ Default roles, permissions, and features
+-- ✅ Role-permission assignments
+--
+-- USAGE:
+-- 1. Copy the entire contents of this file
+-- 2. Paste into your Supabase SQL Editor
+-- 3. Execute the script
+-- 4. Your database is ready to use!
+--
+-- NOTE: All other SQL files have been moved to deprecated-sql-files/
+-- This single file replaces all previous setup scripts.
+--
+-- Last Updated: September 29, 2025
+-- Version: 2.0 (Post prep-planner cleanup)
 -- =====================================================
 
 -- =====================================================

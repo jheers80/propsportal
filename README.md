@@ -9,9 +9,15 @@ This is a Next.js application designed to manage users, locations, and permissio
 - [Tailwind CSS](https://tailwindcss.com/) - A utility-first CSS framework
 - [TypeScript](https://www.typescriptlang.org/) - Typed superset of JavaScript
 
-## Database Schema
+## Database Setup
 
-The database is managed with Supabase and the schema is defined through a series of migration files located in the `supabase/migrations` directory.
+The database is managed with Supabase. For new installations, use the single setup file:
+
+**`complete_database_setup.sql`** - Contains everything needed for a complete database setup
+
+See `DATABASE_SETUP.md` for detailed setup instructions.
+
+## Database Schema
 
 ### Tables
 
@@ -75,18 +81,30 @@ Authorization is managed through a role-based access control (RBAC) system. Role
 
 ## Getting Started
 
-First, you need to have a Supabase project set up. You will need to add your Supabase project URL and anon key to your environment variables. Create a `.env.local` file in the root of the project and add the following:
+### 1. Database Setup
+1. Create a new [Supabase](https://supabase.io/) project
+2. Copy the contents of `complete_database_setup.sql`
+3. Paste and run in your Supabase SQL Editor
+4. Verify all tables and data were created successfully
 
-```
+### 2. Environment Configuration
+Create a `.env.local` file in the root of the project:
+
+```env
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
 
-Then, run the development server:
-
+### 3. Install Dependencies & Run
 ```bash
+npm install
 npm run dev
 ```
+
+### 4. Verification
+- Navigate to `http://localhost:3000`
+- The application should load without errors
+- Database tables should be visible in your Supabase dashboard
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 

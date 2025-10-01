@@ -31,19 +31,11 @@ export default function LoginPage() {
       if (error) {
         setError(error.message);
         // Log failed login attempt (we'll do this on the server side)
-        await fetch('/api/auth/log-attempt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, success: false }),
-        });
+        try { await (await import('@/lib/apiPost')).apiPost('/api/auth/log-attempt', { email, success: false }); } catch (e) { console.error('Failed to log attempt', e); }
         setLoading(false);
       } else {
         // Log successful login attempt
-        await fetch('/api/auth/log-attempt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, success: true }),
-        });
+        try { await (await import('@/lib/apiPost')).apiPost('/api/auth/log-attempt', { email, success: true }); } catch (e) { console.error('Failed to log attempt', e); }
         // Redirect to portal instead of using router.refresh()
         router.push('/portal');
       }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import apiPost, { apiGet } from '@/lib/apiPost';
 import {
   Box,
   Typography,
@@ -41,32 +41,16 @@ export default function UserLocationsManager({ selectedUser, locations }: UserLo
         setError(null);
         try {
           // Get the access token for API calls
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session?.access_token) {
-            setError('Authentication required');
-            setLoading(false);
-            return;
-          }
-
-          const response = await fetch(`/api/user-locations?userId=${selectedUser.id}`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            setError(errorData.error || 'Failed to fetch user locations');
+            try {
+              const data = await apiGet<{ userLocations: Array<{ location_id: number }> }>(`/api/user-locations?userId=${selectedUser.id}`);
+              setUserLocations(data.userLocations.map((ul) => ul.location_id));
+            } catch (e) {
+            console.error('Error fetching user locations:', e);
+            setError('Failed to fetch user locations');
             setUserLocations([]);
+          } finally {
             setLoading(false);
-            return;
           }
-
-          const data = await response.json();
-          setUserLocations(data.userLocations.map((ul: { location_id: number }) => ul.location_id));
-          setLoading(false);
         } catch (error) {
           console.error('Error fetching user locations:', error);
           setError('Failed to fetch user locations');
@@ -88,40 +72,21 @@ export default function UserLocationsManager({ selectedUser, locations }: UserLo
     setError(null);
     try {
       // Get the access token for API calls
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setError('Authentication required');
-        setLoading(false);
-        return;
-      }
-
       // Calculate new location IDs
       const newLocationIds = checked
         ? [...userLocations, locationId]
         : userLocations.filter(id => id !== locationId);
 
-      const response = await fetch('/api/user-locations', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: selectedUser.id,
-          locationIds: newLocationIds,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to update user locations');
+      try {
+        await apiPost('/api/user-locations', { userId: selectedUser.id, locationIds: newLocationIds });
+        setUserLocations(newLocationIds);
+        setError(null);
+      } catch (e) {
+        console.error('Error updating user locations:', e);
+        setError('Failed to update user locations');
+      } finally {
         setLoading(false);
-        return;
       }
-
-      setUserLocations(newLocationIds);
-      setError(null);
-      setLoading(false);
     } catch (error) {
       console.error('Error updating user locations:', error);
       setError('Failed to update user locations');

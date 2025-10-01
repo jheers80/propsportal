@@ -18,7 +18,8 @@ import {
   ListItem,
   ListItemText,
 } from '@mui/material';
-import { supabase } from '@/lib/supabaseClient';
+import { getSessionToken } from '@/lib/supabaseClient';
+import apiPost, { apiGet } from '@/lib/apiPost';
 
 interface Location {
   id: number;
@@ -44,10 +45,11 @@ export default function PassphraseManager() {
 
   const refreshList = async () => {
     setListLoading(true);
-    const res = await fetch('/api/passphrases/list');
-    const data = await res.json();
-    if (res.ok) {
+    try {
+      const data = await apiGet<{ passphrases?: ListedPassphrase[] }>('/api/passphrases/list');
       setList(data.passphrases || []);
+    } catch (e) {
+      console.error('Failed to fetch passphrase list', e);
     }
     setListLoading(false);
   };
@@ -55,28 +57,7 @@ export default function PassphraseManager() {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        // Get the access token for API calls
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) {
-          setError('Authentication required');
-          return;
-        }
-
-        const response = await fetch('/api/locations', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          setError(errorData.error || 'Failed to fetch locations');
-          return;
-        }
-
-        const data = await response.json();
+        const data = await apiGet<{ locations?: Location[] }>('/api/locations');
         setLocations(data.locations || []);
       } catch (error) {
         console.error('Error fetching locations:', error);
@@ -97,13 +78,7 @@ export default function PassphraseManager() {
     setGeneratedPassphrase('');
 
     try {
-      const res = await fetch('/api/passphrases/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ locationId: Number(selectedLocation) }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to generate');
+      const data = await apiPost<{ passphrase: string }>('/api/passphrases/generate', { locationId: Number(selectedLocation) });
       setGeneratedPassphrase(data.passphrase);
       await refreshList();
   } catch (e: unknown) {

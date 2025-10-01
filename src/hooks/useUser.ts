@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import apiPost, { apiGet } from '@/lib/apiPost';
 import type { User } from '@supabase/supabase-js';
 
 interface Profile {
@@ -22,8 +23,7 @@ export function useUser() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
 
-  useEffect(() => {
-    const fetchUser = async () => {
+  const fetchUser = async () => {
       setLoading(true);
       setError(null);
       try {
@@ -55,30 +55,20 @@ export function useUser() {
         setUser(user);
 
         if (user) {
-          // Get the access token for API calls
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session?.access_token) {
-            throw new Error('No access token available');
-          }
-
           // Fetch user data from API
-          const response = await fetch('/api/users/me', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to fetch user data');
-          }
-
-          const data = await response.json();
+      const data = await apiGet<{ profile: Profile; locations?: Location[] }>('/api/users/me');
 
           setProfile(data.profile);
           setLocations(data.locations || []);
+          // Expose profile to window for UI components that need role info for client-side operations
+          try {
+            if (typeof window !== 'undefined') {
+              // attach to window with a typed property
+              (window as unknown as { __USER_PROFILE__?: Profile }).__USER_PROFILE__ = data.profile;
+            }
+          } catch (e) {
+            // ignore
+          }
         }
       } catch (e) {
         setError(e);
@@ -87,6 +77,18 @@ export function useUser() {
       }
     };
 
+  const refreshLocations = async () => {
+    if (!user) return;
+    
+    try {
+  const data = await apiGet<{ profile: Profile; locations?: Location[] }>('/api/users/me');
+      setLocations(data.locations || []);
+    } catch (e) {
+      console.error('Error refreshing locations:', e);
+    }
+  };
+
+  useEffect(() => {
     fetchUser();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -106,5 +108,5 @@ export function useUser() {
     };
   }, []);
 
-  return { user, profile, locations, loading, error, setUser, setProfile };
+  return { user, profile, locations, loading, error, setUser, setProfile, refreshLocations };
 }

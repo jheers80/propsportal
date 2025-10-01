@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
+import { apiGet } from '@/lib/apiPost';
 import AddLocationForm from '@/components/AddLocationForm';
 import LocationsTable from '@/components/LocationsTable';
 
@@ -24,24 +24,8 @@ export default function LocationsPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // Get the access token for API calls
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) {
-          return;
-        }
-
-        const response = await fetch('/api/locations', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setLocations(data.locations || []);
-        }
+  const data = await apiGet<{ locations?: Location[] }>('/api/locations');
+  setLocations(data.locations || []);
       } catch (error) {
         console.error('Error fetching locations:', error);
       }
@@ -64,7 +48,7 @@ export default function LocationsPage() {
       <AddLocationForm onLocationAdded={handleLocationAdded} />
       <LocationsTable locations={locations} 
         selectedLocation={null} 
-  onSelectLocation={( location: Location) => {/* Removed debug log */}} 
+        onSelectLocation={() => {}} 
       />
     </div>
   );

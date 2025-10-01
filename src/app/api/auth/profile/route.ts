@@ -100,8 +100,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { full_name, email } = body;
+    // Read raw text so we can detect empty bodies without throwing.
+    const raw = await request.text();
+    let body: any = {};
+
+    if (!raw || raw.trim() === '') {
+      // No body provided — treat as a no-op and return current profile below.
+      body = {};
+    } else {
+      try {
+        body = JSON.parse(raw);
+      } catch (e) {
+        console.warn('Invalid JSON in profile POST', e);
+        return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+      }
+    }
+
+    const { full_name, email } = body ?? {};
+
+    if (typeof full_name === 'undefined' && typeof email === 'undefined') {
+      // No fields provided — treat this as a no-op and return the current profile.
+      const existing = await supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (existing.error) {
+        console.error('Error fetching existing profile during no-op POST:', existing.error);
+        return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
+      }
+
+      return NextResponse.json({ profile: existing.data });
+    }
 
     // Update the user's profile
     const { data: profile, error: profileError } = await supabaseAdmin

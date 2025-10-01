@@ -1,6 +1,7 @@
 'use client';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, getSessionToken } from '@/lib/supabaseClient';
+import apiGet, { apiDelete } from '@/lib/apiPost';
 
 const AuthContext = createContext(undefined);
 
@@ -10,29 +11,14 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        console.error('No access token available');
-        return null;
-      }
-
-      const response = await fetch('/api/auth/profile', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error fetching profile:', errorData.error);
-        return null;
-      }
-
-      const data = await response.json();
-      return data.profile;
+      try {
+        try {
+          const data = /** @type {{ profile?: any }} */ (await apiGet('/api/auth/profile'));
+          return data.profile;
+        } catch (e) {
+          console.error('Error fetching profile:', e);
+          return null;
+        }
     } catch (error) {
       console.error('Error in fetchProfile:', error);
       return null;
@@ -47,25 +33,15 @@ export function AuthProvider({ children }) {
   };
 
   const signOut = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        await fetch('/api/auth/session', {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+      try {
+        await apiDelete('/api/auth/session');
+        // Also sign out from Supabase client
+        await supabase.auth.signOut();
+        setUser(null);
+        setProfile(null);
+      } catch (error) {
+        console.error('Error signing out:', error);
       }
-
-      // Also sign out from Supabase client
-      await supabase.auth.signOut();
-      setUser(null);
-      setProfile(null);
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
   };
 
   useEffect(() => {
@@ -73,19 +49,19 @@ export function AuthProvider({ children }) {
 
     const getInitialSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-
-        if (error) {
-          console.error('Error getting session:', error);
-          return;
-        }
-
-        if (session?.user && mounted) {
-          setUser(session.user);
-          const profileData = await fetchProfile(session.user.id);
-          if (mounted) {
-            setProfile(profileData);
+        try {
+          const token = await getSessionToken();
+          if (!token) return;
+          // we can still get the user via supabase client
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user && mounted) {
+            setUser(user);
+            const profileData = await fetchProfile(user.id);
+            if (mounted) setProfile(profileData);
           }
+        } catch (e) {
+          console.error('Error getting session:', e);
+          return;
         }
       } catch (error) {
         console.error('Error in getInitialSession:', error);

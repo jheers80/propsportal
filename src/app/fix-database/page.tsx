@@ -17,21 +17,19 @@ export default function FixDatabase() {
     setError('');
 
     try {
-      const response = await fetch('/api/fix-db', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      try {
+        const { apiPost } = await import('@/lib/apiPost');
+        const data = await apiPost<{
+          sql_commands?: Array<{
+            title: string;
+            sql: string;
+          }>;
+        }>('/api/fix-db');
         setStatus('success');
         setResult(data);
-      } else {
+      } catch (err: any) {
         setStatus('error');
-        setError(data.error || 'Unknown error occurred');
+        setError(err?.message || 'Unknown error occurred');
       }
     } catch (err) {
       setStatus('error');

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import apiGet from '@/lib/apiPost';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import {
@@ -28,10 +29,10 @@ type Location = {
 };
 
 export default function AdminUsersPage() {
-  const { profile, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
   const { permissions, loading: permissionsLoading } = usePermissions();
   const [users, setUsers] = useState<AdminProfile[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
+  // locations were previously fetched for UserLocationsManager which is currently disabled
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminProfile | null>(null);
@@ -40,47 +41,16 @@ export default function AdminUsersPage() {
     async function fetchData() {
       setLoading(true);
       try {
-        // Get the access token for API calls
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) {
-          setError('Authentication required');
-          setLoading(false);
-          return;
-        }
-
-        // Fetch users from API
-        const usersResponse = await fetch('/api/users', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!usersResponse.ok) {
-          const errorData = await usersResponse.json();
-          setError(errorData.error || 'Failed to fetch users');
-        } else {
-          const usersData = await usersResponse.json();
+        // Fetch users and locations from API
+        try {
+          const usersData = await apiGet<{ users?: AdminProfile[] }>('/api/users');
           setUsers(usersData.users || []);
+        } catch (e) {
+          console.error('Failed to fetch users', e);
+          setError('Failed to fetch users');
         }
 
-        // Fetch locations from API
-        const locationsResponse = await fetch('/api/locations', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!locationsResponse.ok) {
-          const errorData = await locationsResponse.json();
-          setError(errorData.error || 'Failed to fetch locations');
-        } else {
-          const locationsData = await locationsResponse.json();
-          setLocations(locationsData.locations || []);
-        }
+        // locations fetch removed — UserLocationsManager is currently disabled
       } catch (error) {
         console.error('Error fetching data:', error);
         setError(error instanceof Error ? error.message : 'An error occurred');

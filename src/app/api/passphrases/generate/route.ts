@@ -1,17 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { randomInt } from 'crypto';
-import words from 'an-array-of-english-words';
+import { generate } from 'random-words';
+import { predicates, objects, teams, collections } from 'friendly-words';
 import { logAuditEvent } from '@/lib/audit';
 
 function pickPassphrase(wordCount = 3) {
-  const pool = words.filter((w) => /^[a-z]+$/.test(w) && w.length >= 3 && w.length <= 10);
-  const parts: string[] = [];
-  for (let i = 0; i < wordCount; i++) {
-    const idx = randomInt(0, pool.length);
-    parts.push(pool[idx]);
-  }
-  return parts.join('-');
+  // Option 1: Using random-words (most common words)
+  const randomWordsPassphrase = () => {
+    const words = generate({ 
+      exactly: wordCount, 
+      minLength: 3,
+      maxLength: 8,
+      formatter: (word: string) => word.toLowerCase()
+    });
+    return Array.isArray(words) ? words.join('-') : words;
+  };
+
+  // Option 2: Using friendly-words (curated for human-friendly combinations)
+  const friendlyWordsPassphrase = () => {
+    const wordPools = [predicates, objects, teams, collections];
+    const parts: string[] = [];
+    
+    for (let i = 0; i < wordCount; i++) {
+      // Rotate through different word types for variety
+      const poolIndex = i % wordPools.length;
+      const pool = wordPools[poolIndex];
+      const word = pool[randomInt(0, pool.length)];
+      parts.push(word.toLowerCase());
+    }
+    return parts.join('-');
+  };
+
+  // Use friendly-words for more natural combinations
+  return friendlyWordsPassphrase();
 }
 
 export async function POST(req: NextRequest) {

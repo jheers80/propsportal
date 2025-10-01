@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import apiGet from '@/lib/apiPost';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import {
@@ -47,31 +47,13 @@ export default function AuditTrailsPage() {
     setLoading(true);
     setError(null);
     try {
-      // Get the access token for API calls
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setError('Authentication required');
-        setLoading(false);
-        return;
+      try {
+        const data = await apiGet<{ auditTrails?: AuditTrail[] }>('/api/admin/audit-trails');
+        setAuditTrails(data.auditTrails || []);
+      } catch (err) {
+        console.error('Error fetching audit trails:', err);
+        setError('Failed to fetch audit trails');
       }
-
-      const response = await fetch('/api/admin/audit-trails', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to fetch audit trails');
-        setLoading(false);
-        return;
-      }
-
-      const data = await response.json();
-      setAuditTrails(data.auditTrails || []);
     } catch (err) {
       console.error('Error fetching audit trails:', err);
       setError('Failed to fetch audit trails');

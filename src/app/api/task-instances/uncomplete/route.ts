@@ -1,0 +1,108 @@
+import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false, autoRefreshToken: false } }
+    );
+
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    if (userError || !user) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+
+    const body = await request.json();
+    const { completion_id, instance_id } = body || {};
+    if (!instance_id || !completion_id) return NextResponse.json({ error: 'instance_id and completion_id required' }, { status: 400 });
+
+    // Fetch instance + task
+    const { data: instance, error: instErr } = await supabaseAdmin
+      .from('task_instances')
+      .select('*, tasks(*)')
+      .eq('id', instance_id)
+      .single();
+
+    if (instErr || !instance) return NextResponse.json({ error: 'Instance not found' }, { status: 404 });
+
+    const task = instance.tasks;
+
+    // Permission: check if user can uncomplete this instance (similar logic to complete)
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile) return NextResponse.json({ error: 'Profile not found' }, { status: 400 });
+
+    let roleName: string | null = null;
+    try {
+      const { data: roleRec, error: roleErr } = await supabaseAdmin
+        .from('user_roles')
+        .select('name')
+        .eq('id', profile.role)
+        .single();
+      if (!roleErr && roleRec) roleName = roleRec.name;
+    } catch (e) {}
+    if (!roleName) {
+      if (profile.role === 'superadmin' || profile.role === 1 || profile.role === '1') roleName = 'superadmin';
+      else if (typeof profile.role === 'string') roleName = profile.role;
+    }
+
+    let allowed = false;
+    if (roleName === 'superadmin') allowed = true;
+    if (!allowed && task && task.task_list_id) {
+      const { data: tl, error: tlErr } = await supabaseAdmin
+        .from('task_lists')
+        .select('*')
+        .eq('id', task.task_list_id)
+        .single();
+      if (!tl || tlErr) return NextResponse.json({ error: 'Task list not found' }, { status: 404 });
+      if (tl.role_id && tl.role_id === roleName) allowed = true;
+      if (!allowed && tl.location_id) {
+        const { data: userLocs } = await supabaseAdmin
+          .from('user_locations')
+          .select('location_id')
+          .eq('user_id', user.id)
+          .eq('location_id', tl.location_id)
+          .limit(1);
+        if (userLocs && userLocs.length > 0) allowed = true;
+      }
+    }
+
+    if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+    // Delete the completion record
+    const { error: delErr } = await supabaseAdmin
+      .from('task_completions')
+      .delete()
+      .eq('id', completion_id)
+      .limit(1);
+
+    if (delErr) {
+      console.error('Error deleting completion:', delErr);
+      return NextResponse.json({ error: delErr.message || delErr }, { status: 500 });
+    }
+
+    // Update instance status back to pending
+    const { error: updErr } = await supabaseAdmin
+      .from('task_instances')
+      .update({ status: 'pending' })
+      .eq('id', instance_id);
+
+    if (updErr) {
+      console.error('Error updating instance status:', updErr);
+      return NextResponse.json({ error: updErr.message || updErr }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('Error in POST /api/task-instances/uncomplete', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

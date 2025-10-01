@@ -44,24 +44,88 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
-    // Fetch user's locations
-    const { data: locations, error: locationsError } = await supabaseAdmin
-      .from('user_locations')
-      .select(`
-        locations!inner (
-          id,
-          store_name,
-          store_id,
-          city,
-          state,
-          zip
-        )
-      `)
-      .eq('user_id', user.id);
+    // Determine if the user is a superadmin and resolve a canonical role name.
+    // profile.role can be either an id referencing user_roles or a string like 'superadmin'.
+    let isSuperAdmin = false;
+    let resolvedRoleName: string | null = null;
+    try {
+      // If profile.role looks like an id, try to resolve the user_roles.name
+      const { data: userRole, error: roleError } = await supabaseAdmin
+        .from('user_roles')
+        .select('name')
+        .eq('id', profile.role)
+        .single();
 
-    if (locationsError) {
-      console.error('Error fetching locations:', locationsError);
-      // Don't fail the request if locations can't be fetched
+      if (!roleError && userRole) {
+        resolvedRoleName = userRole.name;
+        isSuperAdmin = userRole.name === 'superadmin';
+      }
+    } catch (e) {
+      // ignore and fall back to string checks below
+    }
+
+    // Also allow profile.role to be the literal string or numeric id for
+    // superadmin (some seed data uses 'superadmin' directly or id 1).
+    if (!resolvedRoleName) {
+      if (profile.role === 'superadmin' || profile.role === 1 || profile.role === '1') {
+        resolvedRoleName = 'superadmin';
+        isSuperAdmin = true;
+      } else if (typeof profile.role === 'string') {
+        // Use the string as a fallback role name
+        resolvedRoleName = profile.role;
+      }
+    }
+
+    let transformedLocations: any[] = [];
+
+    if (isSuperAdmin) {
+      // Superadmin should see all locations (setup locations). Return all
+      // records from the locations table.
+      const { data: allLocations, error: allLocationsError } = await supabaseAdmin
+        .from('locations')
+        .select('id, store_name, store_id, city, state, zip');
+
+      if (allLocationsError) {
+        console.error('Error fetching all locations for superadmin:', allLocationsError);
+      }
+
+      transformedLocations = (allLocations || []).map((loc: any) => ({
+        id: loc.id,
+        store_name: loc.store_name,
+        store_id: loc.store_id,
+        city: loc.city,
+        state: loc.state,
+        zip: loc.zip
+      }));
+    } else {
+      // Fetch user's locations (normal path)
+      const { data: locations, error: locationsError } = await supabaseAdmin
+        .from('user_locations')
+        .select(`
+          locations!inner (
+            id,
+            store_name,
+            store_id,
+            city,
+            state,
+            zip
+          )
+        `)
+        .eq('user_id', user.id);
+
+      if (locationsError) {
+        console.error('Error fetching locations for user:', user.id, locationsError);
+        // Don't fail the request if locations can't be fetched
+      }
+
+      transformedLocations = locations?.map((item: any) => ({
+        id: item.locations.id,
+        store_name: item.locations.store_name,
+        store_id: item.locations.store_id,
+        city: item.locations.city,
+        state: item.locations.state,
+        zip: item.locations.zip
+      })) || [];
     }
 
     // Fetch user's permissions
@@ -85,6 +149,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Attach resolvedRoleName for client convenience (role_name)
+    const safeProfile = { ...profile, role_name: resolvedRoleName };
+
     return NextResponse.json({
       user: {
         id: user.id,
@@ -92,12 +159,50 @@ export async function GET(request: NextRequest) {
         aud: user.aud,
         role: user.role
       },
-      profile,
-      locations: locations || [],
+      profile: safeProfile,
+      locations: transformedLocations,
       permissions: permissionNames
     });
   } catch (error) {
     console.error('Error in users/me API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// Add a POST handler that logs caller details and returns 405 so we can
+// detect unintended POSTs to this GET-only endpoint during development.
+export async function POST(request: NextRequest) {
+  try {
+    const ua = request.headers.get('user-agent') ?? 'unknown';
+    const referer = request.headers.get('referer') ?? request.headers.get('referrer') ?? 'none';
+    const origin = request.headers.get('origin') ?? 'none';
+    const contentLength = request.headers.get('content-length') ?? 'unknown';
+    const allHeaders: Record<string,string> = {};
+    for (const [k,v] of request.headers.entries()) {
+      allHeaders[k] = v;
+    }
+    let bodySnippet = '';
+    try {
+      const text = await request.text();
+      bodySnippet = text ? (text.length > 500 ? text.slice(0, 500) + '...[truncated]' : text) : '<empty>';
+    } catch (e) {
+      bodySnippet = '<unreadable>';
+    }
+
+    console.warn('[users/me] Received non-GET request', {
+      method: 'POST',
+      url: request.url,
+      ua,
+      referer,
+      origin,
+      contentLength,
+      bodySnippet,
+      headers: allHeaders,
+    });
+
+    return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+  } catch (error) {
+    console.error('Error in users/me POST logger:', error);
+    return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
   }
 }
