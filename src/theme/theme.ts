@@ -23,6 +23,14 @@ const theme = createTheme({
   palette: {
     primary: pizzaRanchColors.primary,
     secondary: pizzaRanchColors.secondary,
+    tp: {
+        accent: '#ef4444',
+        accent2: '#b91c1c',
+        // rgb variants are useful for CSS rgba() with alpha channels
+        accentRgb: '239,68,68',
+        accent2Rgb: '185,28,28',
+        cardBg: 'linear-gradient(180deg, #ffffff, #fff5f5)'
+    },
     background: pizzaRanchColors.background,
     text: pizzaRanchColors.text,
   },

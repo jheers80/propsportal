@@ -66,8 +66,8 @@ export default function CreateTaskPage() {
       // Call server API
       await apiPost('/api/tasks', payload);
 
-      // navigate back to tasks dashboard for the same location/list
-      router.push(`/tasks?location=${locationId || ''}&taskList=${taskListId}`);
+  // navigate back to tasks dashboard for the same location/list (new route)
+  router.push(`/tasks/locations/${locationId || ''}?taskList=${taskListId}`);
     } catch (err: any) {
       logger.error('Error creating task', err);
       setError(err?.message || 'Failed to create task');
@@ -134,7 +134,7 @@ export default function CreateTaskPage() {
               )}
 
               <Stack direction="row" spacing={2}>
-                <Button variant="outlined" onClick={() => router.push(`/tasks?location=${locationId || ''}&taskList=${taskListId || ''}`)}>Cancel</Button>
+                <Button variant="outlined" onClick={() => router.push(`/tasks/locations/${locationId || ''}?taskList=${taskListId || ''}`)}>Cancel</Button>
                 <Button variant="contained" type="submit" disabled={loading}>Create Task</Button>
               </Stack>
             </Stack>

@@ -1,14 +1,9 @@
-﻿'use client';
-import * as React from 'react';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import theme from './theme';
+﻿import * as React from 'react';
 
+// Keep ThemeRegistry as a simple server component wrapper for now. We
+// intentionally avoid server-side style injection and do not create an
+// emotion cache on the server. Client-side cache is created in
+// ClientThemeProvider to ensure consistent class name generation.
 export default function ThemeRegistry({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline enableColorScheme />
-      {children}
-    </ThemeProvider>
-  );
+  return <>{children}</>;
 }

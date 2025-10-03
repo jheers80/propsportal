@@ -1,0 +1,131 @@
+/* Basic styles for tasks landing and list selection */
+/* Theme tokens are provided via MUI theme and ClientThemeProvider.
+  CSS variables below provide defaults and are overwritten at runtime by ClientThemeProvider. */
+:root {
+  --tp-accent: #ef4444; /* red-500 */
+  --tp-accent-2: #b91c1c; /* red-700 */
+  /* rgb triples for rgba() usages: default to the same colors */
+  --tp-accent-rgb: 239,68,68;
+  --tp-accent-2-rgb: 185,28,28;
+  --tp-card-bg: linear-gradient(180deg, #ffffff, #fff5f5);
+}
+
+.tasks-landing {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 8px;
+}
+
+.location-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.grid-item {
+  display: block;
+}
+
+.location-card {
+  display: block;
+  padding: 18px 16px;
+  text-align: left;
+  border: 1px solid rgba(var(--tp-accent-2-rgb), 0.06);
+  border-radius: 10px;
+  background: var(--tp-card-bg);
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.location-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 32px rgba(16,24,40,0.12);
+  border-color: rgba(var(--tp-accent-2-rgb), 0.12);
+}
+
+.loc-name {
+  font-weight: 700;
+  font-size: 1.06rem;
+  margin-bottom: 6px;
+  color: var(--tp-accent-2);
+}
+
+.loc-meta {
+  color: rgba(2,6,23,0.6);
+  font-size: 0.9rem;
+}
+
+.hero {
+  background: linear-gradient(135deg, rgba(var(--tp-accent-rgb), 0.08), rgba(var(--tp-accent-rgb), 0.02));
+  padding: 22px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid rgba(var(--tp-accent-2-rgb), 0.06);
+}
+
+.hero-card {
+  background: #ededed;
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 18px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.04);
+}
+
+.section-heading {
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 800;
+  margin: 16px 0;
+  letter-spacing: 1px;
+}
+
+.location-list { max-width: 720px; margin: 0 auto; }
+
+.continue-btn {
+  border-radius: 28px;
+  padding: 10px 28px;
+  border-color: var(--tp-accent);
+  color: var(--tp-accent);
+}
+
+.hero h1 { margin: 0; color: var(--tp-accent); }
+.hero p { margin: 0; color: rgba(2,6,23,0.7); }
+
+.list-selection ul { list-style: none; padding: 0; margin: 8px 0; }
+.list-selection li { padding: 10px 12px; border-bottom: 1px dashed rgba(0,0,0,0.04); }
+
+
+/* Simple modal used in ListSelection */
+.modal {
+  position: fixed;
+  left: 0; right: 0; top: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.35);
+  z-index: 1200;
+}
+
+.modal-content {
+  background: var(--background, #fff);
+  color: var(--foreground, #111);
+  padding: 18px;
+  border-radius: 8px;
+  min-width: 320px;
+  max-width: 720px;
+  box-shadow: 0 10px 30px rgba(2,6,23,0.12);
+}
+
+.modal-content input,
+.modal-content textarea {
+  width: 100%;
+  padding: 8px 10px;
+  margin-top: 6px;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 6px;
+}
+
+.modal-content label { display:block; margin-top:8px; font-weight:600; }
