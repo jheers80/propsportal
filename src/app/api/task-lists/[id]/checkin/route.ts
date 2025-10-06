@@ -70,4 +70,4 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   }
 }
 
-export default POST;
+// no default export for route handlers — keep named exports only

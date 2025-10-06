@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase, getSessionToken } from '../lib/supabaseClient';
+import { getSessionToken } from '../lib/supabaseClient';
 import logger from '../lib/logger';
 
 /**

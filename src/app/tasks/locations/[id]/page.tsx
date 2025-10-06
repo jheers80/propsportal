@@ -21,7 +21,7 @@ export default function LocationTaskListsPage() {
         if (res && typeof res === 'object' && (res as any).location) {
           setLocationName((res as any).location.store_name || String(id));
         }
-      } catch (e) {
+      } catch {
         // keep id as fallback
       }
     }

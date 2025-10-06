@@ -67,8 +67,10 @@ export async function userHasLocationMembership(userId: string, locationId: any)
   }
 }
 
-export default {
+const serverAuth = {
   resolveUserFromToken,
   resolveRoleNameForUserId,
   userHasLocationMembership,
 };
+
+export default serverAuth;

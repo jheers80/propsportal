@@ -104,4 +104,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export default GET;
+// no default export for route handlers — keep named exports only

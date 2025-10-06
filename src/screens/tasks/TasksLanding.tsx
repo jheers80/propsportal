@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/hooks/useUser';
 import './tasks.css';
-import { Grid, Card, CardContent, Typography, Button, Stack, Box } from '@mui/material';
+import { Typography, Button, Stack, Box } from '@mui/material';
 import LocationCard from './LocationCard';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AssignmentIcon from '@mui/icons-material/Assignment';

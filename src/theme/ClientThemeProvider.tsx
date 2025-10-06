@@ -22,7 +22,7 @@ export default function ClientThemeProvider({ children }: { children: React.Reac
         root.style.setProperty('--tp-accent-2-rgb', (theme.palette.tp as any).accent2Rgb);
       }
       root.style.setProperty('--tp-card-bg', theme.palette.tp.cardBg);
-    } catch (e) {
+    } catch {
       // ignore in SSR
     }
   }, []);

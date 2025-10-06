@@ -4,14 +4,8 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import TasksBreadcrumb from '@/components/TasksBreadcrumb';
 import Navbar from '@/components/Navbar';
 import { apiGet, apiPost } from '@/lib/apiPost';
-import { Card, CardContent, Typography, Box, Stack, Button, IconButton, Divider, Checkbox, Dialog, DialogTitle, DialogContent, DialogActions, FormControlLabel } from '@mui/material';
-import CircularProgress from '@mui/material/CircularProgress';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import { Card, CardContent, Typography, Box, Stack, Button, Checkbox, Dialog, DialogTitle, DialogContent, DialogActions, FormControlLabel, Snackbar, Alert } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useTaskCompletion } from '@/hooks/useTaskCompletion';
 import { useUser } from '@/hooks/useUser';
 
 export default function TaskListPage() {
@@ -25,7 +19,7 @@ export default function TaskListPage() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [locationName, setLocationName] = useState<string>(String(id || 'Location'));
-  const [completingIds, setCompletingIds] = useState<Record<string, boolean>>({});
+  // per-instance completion state removed (not used here)
   const [snackOpen, setSnackOpen] = useState(false);
   const [snackMsg, setSnackMsg] = useState('');
   const [snackSeverity, setSnackSeverity] = useState<'success' | 'info' | 'warning' | 'error'>('success');
@@ -36,13 +30,13 @@ export default function TaskListPage() {
   const [updateAndCheckIn, setUpdateAndCheckIn] = useState(true);
   const [processingUpdate, setProcessingUpdate] = useState(false);
 
-  const { completeTask, loading: completing } = (useTaskCompletion() as any);
+  // completion hook available if needed
   const { locations: userLocations } = useUser();
 
   const isAssignedToLocation = (() => {
     try {
       if (!userLocations || userLocations.length === 0) return false;
-      return userLocations.some((l: any) => String(l.id) === String(id));
+      return userLocations.some((l: any) => String(l.id) === String(id)); 
     } catch {
       return false;
     }
@@ -79,7 +73,7 @@ export default function TaskListPage() {
         try {
           const listRes = await apiGet(`/api/task-lists/${listId}`);
           if (listRes && (listRes as any).list) setListName((listRes as any).list.name || String(listId));
-        } catch (e) {
+        } catch {
           // ignore
         }
         // fetch checkout state from the list record
@@ -91,15 +85,15 @@ export default function TaskListPage() {
             const me = typeof window !== 'undefined' ? (window as any).__USER_PROFILE__?.id : null;
             setIsCheckedOutByMe(!!who && me && String(who) === String(me));
           }
-        } catch (e) {
+        } catch {
           // ignore
         }
         // fetch location name
         try {
           const locRes = await apiGet(`/api/locations/${id}`);
           if (locRes && (locRes as any).location) setLocationName((locRes as any).location.store_name || String(id));
-        } catch (e) {}
-      } catch (e) {
+        } catch {}
+      } catch {
         // ignore for now
         setTasks([]);
       } finally {
@@ -108,49 +102,9 @@ export default function TaskListPage() {
     }
     load();
     return () => { mounted = false; };
-  }, [listId]);
+  }, [listId, id]);
 
-  async function handleCompleteInstance(instanceId: string) {
-    if (!instanceId) return;
-    try {
-      // optimistic update: mark the instance as completed locally so UI flips immediately
-      const prevTasks = tasks;
-      const nextTasks = tasks.map((task) => {
-        const instances = (task.instances || []).map((inst: any) => inst.id === instanceId ? { ...inst, status: 'completed' } : inst);
-        return { ...task, instances };
-      });
-      setTasks(nextTasks);
-      setCompletingIds((s) => ({ ...s, [instanceId]: true }));
-      const res = await completeTask(instanceId);
-      if (res && res.success) {
-        setSnackMsg('Task completed');
-        setSnackSeverity('success');
-        setSnackOpen(true);
-        // Refresh instances
-        const refreshed = await apiGet(`/api/task-lists/${listId}/instances`);
-        if (refreshed && Array.isArray((refreshed as any).tasks)) setTasks((refreshed as any).tasks);
-      } else {
-        // revert optimistic update
-        setTasks(prevTasks);
-        setSnackMsg(res && (res.error || res.message) ? (res.error || res.message) : 'Failed to complete');
-        setSnackSeverity('error');
-        setSnackOpen(true);
-      }
-    } catch (e: any) {
-      console.error('complete error', e);
-      // revert optimistic update
-      setTasks((prev) => prev.map((task) => ({ ...task, instances: (task.instances || []).map((inst: any) => inst.id === instanceId ? { ...inst, status: inst.status } : inst) })));
-      setSnackMsg(e?.message || String(e));
-      setSnackSeverity('error');
-      setSnackOpen(true);
-    } finally {
-      setCompletingIds((s) => {
-        const copy = { ...s };
-        delete copy[instanceId];
-        return copy;
-      });
-    }
-  }
+  // per-instance completion helper removed (not used) to avoid unused-symbol warnings
 
   return (
     <div>
@@ -201,17 +155,7 @@ export default function TaskListPage() {
                           }
                           {(() => {
                             const instances = task.instances || [];
-                            // helper to get an instance id from a record (support multiple naming conventions)
-                            const getInstId = (inst: any) => inst?.id ?? inst?.instance_id ?? inst?.task_instance_id ?? inst?.uuid ?? undefined;
-                            const isCompletedStatus = (s: any) => typeof s === 'string' && s.toLowerCase() === 'completed';
-                            const pendingInst = instances.find((i: any) => !isCompletedStatus(i?.status));
-                            const pendingId = pendingInst ? getInstId(pendingInst) : undefined;
-                            // if any instance for this task is currently being completed, show spinner/disable
-                            const anyCompleting = instances.some((ins: any) => !!completingIds[ins.id]);
-                            const isCompleted = instances.some((i: any) => (i.status || '').toLowerCase() === 'completed');
-                            // If completed, pick the most recent completion id across instances (by completed_at)
-                            let completedInst: any = undefined;
-                            let completionId: any = undefined;
+                            // compute completed instances
                             const completedInstances = instances.filter((i: any) => (i.status || '').toLowerCase() === 'completed');
                             if (completedInstances.length > 0) {
                               let latestComp: any = null;
@@ -227,8 +171,6 @@ export default function TaskListPage() {
                                 if (!mostRecent) continue;
                                 if (!latestComp || (mostRecent.completed_at && new Date(mostRecent.completed_at) > new Date(latestComp.completed_at))) {
                                   latestComp = mostRecent;
-                                  completedInst = inst;
-                                  completionId = mostRecent.id;
                                 }
                               }
                             }
@@ -280,9 +222,44 @@ export default function TaskListPage() {
 
           <Box sx={{ display: 'flex', gap: 2 }}>
             {checkedOutBy ? (
-              <Button variant="contained" color={isCheckedOutByMe ? 'primary' : 'secondary'} onClick={async () => {
-                if (isCheckedOutByMe) {
-                  // Check in
+              <Button
+                variant="contained"
+                color={isCheckedOutByMe ? 'primary' : 'secondary'}
+                onClick={async () => {
+                  if (isCheckedOutByMe) {
+                    // Check in
+                    try {
+                      const me = typeof window !== 'undefined' ? (window as any).__USER_PROFILE__?.id : null;
+                      if (!me) {
+                        setSnackMsg('Unable to determine user');
+                        setSnackSeverity('error');
+                        setSnackOpen(true);
+                        return;
+                      }
+                      await apiPost(`/api/task-lists/${listId}/checkin`, { user_id: me });
+                      setCheckedOutBy(null);
+                      setIsCheckedOutByMe(false);
+                      setSnackMsg('Checked in');
+                      setSnackSeverity('success');
+                      setSnackOpen(true);
+                    } catch (err: any) {
+                      setSnackMsg(err?.message || String(err));
+                      setSnackSeverity('error');
+                      setSnackOpen(true);
+                    }
+                  } else {
+                    setSnackMsg(`List already checked out by ${checkedOutBy}`);
+                    setSnackSeverity('info');
+                    setSnackOpen(true);
+                  }
+                }}
+              >
+                {isCheckedOutByMe ? 'Check In' : `Checked Out (${checkedOutBy})`}
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                onClick={async () => {
                   try {
                     const me = typeof window !== 'undefined' ? (window as any).__USER_PROFILE__?.id : null;
                     if (!me) {
@@ -291,62 +268,38 @@ export default function TaskListPage() {
                       setSnackOpen(true);
                       return;
                     }
-                    await apiPost(`/api/task-lists/${listId}/checkin`, { user_id: me });
-                    setCheckedOutBy(null);
-                    setIsCheckedOutByMe(false);
-                    setSnackMsg('Checked in');
-                    setSnackSeverity('success');
-                    setSnackOpen(true);
+                    // ensure assigned client-side to reduce failed attempts
+                    if (!isAssignedToLocation) {
+                      setSnackMsg('You are not assigned to this location');
+                      setSnackSeverity('error');
+                      setSnackOpen(true);
+                      return;
+                    }
+                    const res = await apiPost(`/api/task-lists/${listId}/checkout`, { user_id: me });
+                    const cres = res as any;
+                    if (cres && cres.success) {
+                      setCheckedOutBy(me);
+                      setIsCheckedOutByMe(true);
+                      setSnackMsg('Checked out');
+                      setSnackSeverity('success');
+                      setSnackOpen(true);
+                    } else if (cres && cres.locked_by) {
+                      setSnackMsg(`Locked by ${cres.locked_by}`);
+                      setSnackSeverity('info');
+                      setSnackOpen(true);
+                    }
                   } catch (e: any) {
                     setSnackMsg(e?.message || String(e));
                     setSnackSeverity('error');
                     setSnackOpen(true);
                   }
-                } else {
-                  setSnackMsg(`List already checked out by ${checkedOutBy}`);
-                  setSnackSeverity('info');
-                  setSnackOpen(true);
-                }
-              }}>{isCheckedOutByMe ? 'Check In' : `Checked Out (${checkedOutBy})`}</Button>
-            ) : (
-        <Button variant="contained" onClick={async () => {
-                try {
-                  const me = typeof window !== 'undefined' ? (window as any).__USER_PROFILE__?.id : null;
-                  if (!me) {
-                    setSnackMsg('Unable to determine user');
-                    setSnackSeverity('error');
-                    setSnackOpen(true);
-                    return;
-                  }
-                  // ensure assigned client-side to reduce failed attempts
-                  if (!isAssignedToLocation) {
-                    setSnackMsg('You are not assigned to this location');
-                    setSnackSeverity('error');
-                    setSnackOpen(true);
-                    return;
-                  }
-                  const res = await apiPost(`/api/task-lists/${listId}/checkout`, { user_id: me });
-                  const cres = res as any;
-                  if (cres && cres.success) {
-                    setCheckedOutBy(me);
-                    setIsCheckedOutByMe(true);
-                    setSnackMsg('Checked out');
-                    setSnackSeverity('success');
-                    setSnackOpen(true);
-                  } else if (cres && cres.locked_by) {
-                    setSnackMsg(`Locked by ${cres.locked_by}`);
-                    setSnackSeverity('info');
-                    setSnackOpen(true);
-                  }
-                } catch (e: any) {
-                  setSnackMsg(e?.message || String(e));
-                  setSnackSeverity('error');
-                  setSnackOpen(true);
-                }
-              }}>Check Out</Button>
+                }}
+              >
+                Check Out
+              </Button>
             )}
 
-              <Button variant="contained" onClick={() => setUpdateDialogOpen(true)} disabled={!isCheckedOutByMe || processingUpdate || !isAssignedToLocation} sx={{ backgroundColor: (theme) => (theme.palette as any).tp.accent, color: '#fff', textTransform: 'none', fontWeight: 700, px: 4 }}>
+            <Button variant="contained" onClick={() => setUpdateDialogOpen(true)} disabled={!isCheckedOutByMe || processingUpdate || !isAssignedToLocation} sx={{ backgroundColor: (theme) => (theme.palette as any).tp.accent, color: '#fff', textTransform: 'none', fontWeight: 700, px: 4 }}>
               Update Completions
             </Button>
             {isAssignedToLocation ? (
@@ -405,6 +358,11 @@ export default function TaskListPage() {
             }} variant="contained">Apply</Button>
           </DialogActions>
         </Dialog>
+
+        {/* Global snackbar for in-page messages */}
+        <Snackbar open={snackOpen} autoHideDuration={4000} onClose={() => setSnackOpen(false)}>
+          <Alert onClose={() => setSnackOpen(false)} severity={snackSeverity} sx={{ width: '100%' }}>{snackMsg}</Alert>
+        </Snackbar>
       </Box>
     </div>
   );

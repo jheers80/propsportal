@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { apiGet, apiPost } from '@/lib/apiPost';
 import { Box, Button, Typography, Stack, Paper, Divider, CircularProgress, Snackbar, Alert, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
@@ -23,7 +23,7 @@ export default function AdminCheckoutsPage() {
   const [snackMsg, setSnackMsg] = useState('');
   const [snackSeverity, setSnackSeverity] = useState<'success'|'info'|'warning'|'error'>('success');
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await apiGet(`/api/admin/checkouts?page=${page}&per_page=${perPage}`);
@@ -36,10 +36,10 @@ export default function AdminCheckoutsPage() {
     } catch (e: any) {
       setSnackMsg(e?.message || String(e)); setSnackSeverity('error'); setSnackOpen(true);
     } finally { setLoading(false); }
-  }
+  }, [page, perPage]);
 
-  useEffect(() => { load(); }, []);
-  useEffect(() => { load(); }, [page, perPage]);
+  // Load when page or perPage change (also runs on mount)
+  useEffect(() => { load(); }, [load]);
 
   async function forceRelease(taskListId: string) {
     setProcessing((s) => ({ ...s, [taskListId]: true }));

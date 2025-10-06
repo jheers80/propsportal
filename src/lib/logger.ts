@@ -50,12 +50,12 @@ function writeToSink(level: 'error' | 'warn' | 'info' | 'debug', message: string
           queueMicrotask(() => {
             try {
               fn.call(globalConsole, message);
-            } catch (e) {
+            } catch {
               // swallow
             }
           });
           return;
-        } catch (e) {
+  } catch {
           // If queueMicrotask isn't available or scheduling fails, fall
           // back to synchronous call guarded by try/catch.
           try {

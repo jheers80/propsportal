@@ -5,7 +5,7 @@ import { apiGet, apiPost } from '@/lib/apiPost';
 import logger from '@/lib/logger';
 import './tasks.css';
 import { useUser } from '@/hooks/useUser';
-import { Card, CardActionArea, CardContent, Typography, Box, Stack, Button, Skeleton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert, Breadcrumbs } from '@mui/material';
+import { Card, CardActionArea, CardContent, Typography, Box, Stack, Button, Skeleton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ListAltIcon from '@mui/icons-material/ListAlt';
@@ -33,7 +33,7 @@ export default function ListSelection({ locationId }: { locationId: string }) {
   const clientProfile = typeof window !== 'undefined' ? (window as any).__USER_PROFILE__ : null;
   const clientRoleName = clientProfile ? (clientProfile.role || null) : null;
   // also get authoritative location membership from hook
-  const { locations: userLocations, loading: userLoading } = useUser();
+  const { locations: userLocations } = useUser();
 
   const isAssignedToLocation = (() => {
     try {
@@ -45,15 +45,9 @@ export default function ListSelection({ locationId }: { locationId: string }) {
   })();
 
   // Attempt to show a friendly location name if the app exposes it globally; otherwise fall back to id
-  const locationDisplayName = typeof window !== 'undefined' && (window as any).__SELECTED_LOCATION__ && (window as any).__SELECTED_LOCATION__.name
-    ? (window as any).__SELECTED_LOCATION__.name
-    : cleanLocationId || 'Location';
+  // (not currently used in this component)
 
-  // Breadcrumb trail (rendered by page container)
-  const breadcrumbTrail = [
-    { label: 'Tasks', href: '/tasks' },
-    { label: locationDisplayName }
-  ];
+  // Breadcrumb trail is rendered by the page container
 
   useEffect(() => {
     let mounted = true;
@@ -72,7 +66,7 @@ export default function ListSelection({ locationId }: { locationId: string }) {
         // Defensive filter: ensure items have location_id matching the selected location
         try {
           fetched = fetched.filter((it: any) => String((it && (it.location_id ?? it.locationId) || '')).split('#')[0].trim() === String(cleanLocationId));
-        } catch (e) {
+        } catch {
           // ignore and fall back to returned data
         }
         setLists(fetched as any[]);
@@ -87,7 +81,7 @@ export default function ListSelection({ locationId }: { locationId: string }) {
     }
     if (cleanLocationId) load();
     return () => { mounted = false; };
-  }, [locationId]);
+  }, [cleanLocationId]);
 
   if (!cleanLocationId) return <div>Select a location</div>;
   if (error) return <div>Error loading lists</div>;
@@ -109,7 +103,7 @@ export default function ListSelection({ locationId }: { locationId: string }) {
       let refreshedLists = Array.isArray(shaped.lists) ? shaped.lists : [];
       try {
         refreshedLists = refreshedLists.filter((it: any) => String((it && (it.location_id ?? it.locationId) || '')).split('#')[0].trim() === String(cleanLocationId));
-      } catch (e) {}
+      } catch {}
       setLists(refreshedLists);
       // auto-select created list when possible (match by name)
       const created = refreshedLists.find((r: any) => r.name === newName.trim());

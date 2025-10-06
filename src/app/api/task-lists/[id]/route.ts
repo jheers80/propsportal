@@ -39,15 +39,12 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
         const ok = await serverAuth.userHasLocationMembership(user.id, locId);
         if (!ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
-    } catch (e) {
-      logger.error('Error verifying membership for task list', e);
+    } catch {
+      logger.error('Error verifying membership for task list');
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 
-    if (error) {
-      logger.error('Error fetching task list', error);
-      return NextResponse.json({ error: error.message || error }, { status: 500 });
-    }
+    // (error handled above) continue
 
     // attach checkout info if present
     try {
@@ -62,7 +59,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       } else if (data) {
         (data as any).checked_out_by = null;
       }
-    } catch (e) {
+    } catch {
       // ignore checkout attach errors
       if (data) (data as any).checked_out_by = null;
     }
